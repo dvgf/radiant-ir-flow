@@ -63,7 +63,7 @@ const Dashboard = () => {
       <div className="space-y-4">
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground">
-          Welcome back, {user?.firstName || user?.email?.split('@')[0]}!
+          Welcome back, {user?.first_name || user?.email?.split('@')[0]}!
         </p>
 
         {loading ? (

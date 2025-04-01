@@ -17,8 +17,8 @@ export async function fetchTemplateCodeAssociations() {
       return [];
     }
     
-    // Use a proper type assertion that validates the data shape
-    return (data || []) as TemplateCodeAssociation[];
+    // Force the type conversion with unknown as intermediate step
+    return (data || []) as unknown as TemplateCodeAssociation[];
   } catch (error) {
     console.error('Error in fetchTemplateCodeAssociations:', error);
     return [];
@@ -39,8 +39,8 @@ export async function saveTemplateCodeAssociation(association: TemplateCodeAssoc
       throw error;
     }
     
-    // Use a proper type assertion
-    return (data && data.length > 0 ? data[0] : null) as TemplateCodeAssociation;
+    // Force the type conversion with unknown as intermediate step
+    return (data && data.length > 0 ? data[0] : null) as unknown as TemplateCodeAssociation;
   } catch (error) {
     console.error('Error in saveTemplateCodeAssociation:', error);
     throw error;
