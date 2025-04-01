@@ -67,7 +67,13 @@ const ReportSection: React.FC<ReportSectionProps> = ({
             
             // Extract options if available
             if (variable.options && Array.isArray(variable.options)) {
-              extractedOptions[variable.name] = variable.options;
+              // Ensure options are strings, not objects
+              const stringOptions = variable.options.map((option: any) => {
+                if (typeof option === 'string') return option;
+                if (typeof option === 'object' && option.value) return option.value;
+                return String(option);
+              });
+              extractedOptions[variable.name] = stringOptions;
             }
           } else if (typeof variable === 'string') {
             extractedVariables[variable] = '';
