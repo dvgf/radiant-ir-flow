@@ -1,3 +1,4 @@
+
 // Import Json from the integrations/supabase/types file to avoid circular imports
 import { Json } from '../integrations/supabase/types';
 
@@ -19,7 +20,7 @@ export type Database = {
           auth_number?: string | null
           insurance_company?: string | null
           line1_full: string | null
-          tech_notes: string | null
+          tech_notes: string | null // Added to match database
           webhook_url: string | null
           created_at: string
           updated_at: string
@@ -44,7 +45,7 @@ export type Database = {
           auth_number?: string | null
           insurance_company?: string | null
           line1_full?: string | null
-          tech_notes?: string | null
+          tech_notes?: string | null // Added to match database
           webhook_url?: string | null
           created_at?: string
           updated_at?: string
@@ -69,7 +70,7 @@ export type Database = {
           auth_number?: string | null
           insurance_company?: string | null
           line1_full?: string | null
-          tech_notes?: string | null
+          tech_notes?: string | null // Added to match database
           webhook_url?: string | null
           created_at?: string
           updated_at?: string

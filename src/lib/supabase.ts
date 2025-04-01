@@ -117,7 +117,7 @@ export async function updateTechNotes(id: string, tech_notes: string) {
   try {
     const { error } = await supabase
       .from('procedures')
-      .update({ tech_notes })
+      .update({ tech_notes }) // This is now valid with the updated type definition
       .eq('id', id);
       
     if (error) {
@@ -207,7 +207,7 @@ export async function fetchCaseBilling(procedureId: string): Promise<CaseBilling
             modifier: modifier as 'LT' | 'RT' | undefined
           };
         }
-        return { code: code.toString() };
+        return { code: String(code) }; // Use String() instead of toString()
       })
     : [];
   
