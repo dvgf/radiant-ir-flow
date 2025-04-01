@@ -1,5 +1,6 @@
 
 import { supabase } from './client';
+import { ReportSubmission, SubmissionStatus } from '../../types';
 import { triggerKeragonWebhook, uploadReportPdf, deliverPdfToKeragon } from './webhooks-and-storage';
 
 type SubmissionType = 'Complete' | 'Summary Only' | 'Billing Only';
@@ -54,7 +55,7 @@ export async function submitReport(data: SubmissionData) {
               keragon_reference: response.reference_id,
               submission_status: 'processing'
             })
-            .eq('id', submissionData.id);
+            .eq('id', submissionData?.id);
         }
       } catch (webhookError) {
         console.error('Error triggering webhook:', webhookError);
@@ -65,11 +66,11 @@ export async function submitReport(data: SubmissionData) {
           .update({
             submission_status: 'failed',
             details: {
-              ...submissionData.details,
+              ...(submissionData?.details || {}),
               error: (webhookError as Error).message
             }
           })
-          .eq('id', submissionData.id);
+          .eq('id', submissionData?.id);
           
         throw webhookError;
       }
@@ -122,7 +123,7 @@ export async function getSubmissionStatus(submissionId: string) {
   }
 }
 
-export async function updateSubmissionStatus(submissionId: string, status: string, details?: any) {
+export async function updateSubmissionStatus(submissionId: string, status: SubmissionStatus, details?: any) {
   try {
     const { data, error } = await supabase
       .from('report_submissions' as any)

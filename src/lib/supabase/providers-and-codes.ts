@@ -1,4 +1,3 @@
-
 import { supabase } from './client';
 import { BillingCode, Provider } from '../../types';
 
@@ -15,7 +14,6 @@ export async function fetchProviders() {
   // Map provider data to match our Provider interface
   return data.map((provider: any) => ({
     id: provider.provider_id.toString(),
-    provider_name: provider.provider_name,
     name: provider.name || provider.provider_name, // Use name if available, otherwise use provider_name
     provider_id: provider.provider_id,
     initials: provider.initials,

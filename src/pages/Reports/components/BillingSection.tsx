@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from 'react';
-import { CaseBilling, BillingCode } from '@/types';
+import { CaseBilling, BillingCode, Provider } from '@/types';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { fetchProviders, fetchBillingCodes } from '@/lib/supabase';
 import { fetchTemplateCodeAssociations, loadTemplatesAndCodes } from '@/lib/supabase/template-codes';
 import { Check, X } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface BillingSectionProps {
   billing: CaseBilling;
@@ -23,46 +23,48 @@ const BillingSection: React.FC<BillingSectionProps> = ({
   procedureId,
   onComplete 
 }) => {
-  const [providers, setProviders] = useState<any[]>([]);
+  const [providers, setProviders] = useState<Provider[]>([]);
   const [cptCodes, setCptCodes] = useState<BillingCode[]>([]);
   const [icd10Codes, setIcd10Codes] = useState<BillingCode[]>([]);
   const [selectedCptCodes, setSelectedCptCodes] = useState<Array<{code: string, modifier?: 'LT' | 'RT'}>>([]);
   const [selectedIcd10Codes, setSelectedIcd10Codes] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('cpt');
+  const { toast } = useToast();
 
-  // Load available billing codes, providers, and existing selections
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         
-        // Fetch all necessary data
-        const [providersData, billingData] = await Promise.all([
-          fetchProviders(),
-          loadTemplatesAndCodes()
-        ]);
+        const providersData = await fetchProviders();
+        const billingData = await loadTemplatesAndCodes();
+        
+        console.log('Fetched providers:', providersData);
         
         setProviders(providersData);
         setCptCodes(billingData.billingCodes.cpt);
         setIcd10Codes(billingData.billingCodes.icd10);
         
-        // Set selected values from billing
         if (billing) {
           setSelectedCptCodes(billing.billing_codes || []);
           setSelectedIcd10Codes(billing.diagnosis_codes || []);
         }
       } catch (error) {
         console.error('Error fetching billing data:', error);
+        toast({
+          title: "Error loading providers",
+          description: "Could not load provider data. Please try again.",
+          variant: "destructive"
+        });
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, []);
+  }, [billing, toast]);
 
-  // Update the billing state and check completeness
   useEffect(() => {
     setBilling(prev => {
       if (!prev) return null;
@@ -74,7 +76,6 @@ const BillingSection: React.FC<BillingSectionProps> = ({
         updated_at: new Date().toISOString()
       };
       
-      // Check if billing is complete
       const isComplete = Boolean(
         updatedBilling.provider_id && 
         updatedBilling.billing_codes.length > 0 && 
@@ -88,6 +89,7 @@ const BillingSection: React.FC<BillingSectionProps> = ({
   }, [selectedCptCodes, selectedIcd10Codes, setBilling, onComplete]);
 
   const handleProviderChange = (providerId: string) => {
+    console.log('Selected provider:', providerId);
     setBilling(prev => {
       if (!prev) return null;
       return {
@@ -105,10 +107,8 @@ const BillingSection: React.FC<BillingSectionProps> = ({
       );
       
       if (existingIndex >= 0) {
-        // Remove code if already selected
         return prev.filter((_, i) => i !== existingIndex);
       } else {
-        // Add code with modifier if provided
         if (modifier) {
           return [...prev, { code, modifier }];
         } else {
@@ -173,12 +173,16 @@ const BillingSection: React.FC<BillingSectionProps> = ({
           <SelectTrigger id="provider" className="w-full">
             <SelectValue placeholder="Select a provider" />
           </SelectTrigger>
-          <SelectContent>
-            {providers.map((provider) => (
-              <SelectItem key={provider.id} value={provider.id}>
-                {provider.name}
-              </SelectItem>
-            ))}
+          <SelectContent className="max-h-80 overflow-y-auto">
+            {providers.length === 0 ? (
+              <div className="p-2 text-center text-muted-foreground">No providers available</div>
+            ) : (
+              providers.map((provider) => (
+                <SelectItem key={provider.id} value={provider.id}>
+                  {provider.name || provider.initials}
+                </SelectItem>
+              ))
+            )}
           </SelectContent>
         </Select>
       </div>
