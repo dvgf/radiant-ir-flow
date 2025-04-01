@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { fetchTemplates } from '@/lib/supabase/templates';
 
@@ -27,6 +28,7 @@ const ReportSection: React.FC<ReportSectionProps> = ({
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [loading, setLoading] = useState(true);
   const [variables, setVariables] = useState<{[key: string]: string}>({});
+  const [variableOptions, setVariableOptions] = useState<{[key: string]: string[]}>({});
 
   // Load templates
   useEffect(() => {
@@ -51,16 +53,22 @@ const ReportSection: React.FC<ReportSectionProps> = ({
     onComplete(isComplete);
   }, [report.report_text, onComplete]);
 
-  // Extract variables from the template when selected
+  // Extract variables and their options from the template when selected
   useEffect(() => {
     if (selectedTemplate && selectedTemplate.variables) {
       const extractedVariables: {[key: string]: string} = {};
+      const extractedOptions: {[key: string]: string[]} = {};
       
       // Initialize variables from the template
       if (Array.isArray(selectedTemplate.variables)) {
         selectedTemplate.variables.forEach((variable: any) => {
           if (typeof variable === 'object' && variable.name) {
             extractedVariables[variable.name] = variable.default || '';
+            
+            // Extract options if available
+            if (variable.options && Array.isArray(variable.options)) {
+              extractedOptions[variable.name] = variable.options;
+            }
           } else if (typeof variable === 'string') {
             extractedVariables[variable] = '';
           }
@@ -68,6 +76,7 @@ const ReportSection: React.FC<ReportSectionProps> = ({
       }
       
       setVariables(extractedVariables);
+      setVariableOptions(extractedOptions);
     }
   }, [selectedTemplate]);
 
@@ -144,6 +153,37 @@ const ReportSection: React.FC<ReportSectionProps> = ({
     });
   };
 
+  // Render variable input field or radio buttons based on options availability
+  const renderVariableInput = (name: string, value: string) => {
+    const options = variableOptions[name];
+    
+    if (options && options.length > 0) {
+      return (
+        <RadioGroup 
+          value={value} 
+          onValueChange={(newValue) => handleVariableChange(name, newValue)}
+          className="space-y-1"
+        >
+          {options.map((option) => (
+            <div key={option} className="flex items-center space-x-2">
+              <RadioGroupItem value={option} id={`${name}-${option}`} />
+              <Label htmlFor={`${name}-${option}`}>{option}</Label>
+            </div>
+          ))}
+        </RadioGroup>
+      );
+    }
+    
+    return (
+      <Input 
+        id={`var-${name}`}
+        value={value}
+        onChange={(e) => handleVariableChange(name, e.target.value)}
+        className="flex-1"
+      />
+    );
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -188,7 +228,7 @@ const ReportSection: React.FC<ReportSectionProps> = ({
             </div>
           )}
           
-          {/* Variables Section */}
+          {/* Variables Section with Radio Buttons when applicable */}
           {selectedTemplate && Object.keys(variables).length > 0 && (
             <div className="space-y-3">
               <Label>Template Variables</Label>
@@ -197,12 +237,9 @@ const ReportSection: React.FC<ReportSectionProps> = ({
                   <div key={name} className="space-y-1">
                     <Label htmlFor={`var-${name}`}>{name}</Label>
                     <div className="flex gap-2">
-                      <Input 
-                        id={`var-${name}`}
-                        value={value}
-                        onChange={(e) => handleVariableChange(name, e.target.value)}
-                        className="flex-1"
-                      />
+                      <div className="flex-1">
+                        {renderVariableInput(name, value)}
+                      </div>
                       <Button 
                         variant="outline" 
                         size="sm"
