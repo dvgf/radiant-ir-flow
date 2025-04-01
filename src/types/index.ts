@@ -1,4 +1,3 @@
-
 export type UserRole = 'technologist' | 'doctor' | 'admin';
 
 export interface User {
@@ -47,8 +46,24 @@ export interface TemplateCodeAssociation {
   created_at?: string;
 }
 
-export type CaseStatus = 'Scheduled' | 'In Progress' | 'Completed' | 'Cancelled';
-export type ReportStatus = 'Not Started' | 'In Progress' | 'Completed';
+export type CaseStatus = 
+  | 'Scheduled' 
+  | 'In Progress' 
+  | 'Completed' 
+  | 'Cancelled'
+  | 'Arrived'
+  | 'Ready'
+  | 'In-Procedure'
+  | 'PACU'
+  | 'Departed';
+
+export type ReportStatus = 
+  | 'Not Started' 
+  | 'In Progress' 
+  | 'Completed'
+  | 'Complete'
+  | 'Summary Only'
+  | 'Submitted';
 
 export interface Procedure {
   id: string;

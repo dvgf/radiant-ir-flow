@@ -43,6 +43,7 @@ const ProcedureList = ({
     
     switch (status) {
       case 'Complete':
+      case 'Completed':
         className += 'bg-green-900/30 text-green-200';
         break;
       case 'Summary Only':

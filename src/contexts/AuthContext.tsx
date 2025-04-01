@@ -42,8 +42,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             id: session.user.id,
             email: session.user.email || '',
             role: role,
-            firstName: session.user.user_metadata?.first_name || 'Test',
-            lastName: session.user.user_metadata?.last_name || 'User',
+            first_name: session.user.user_metadata?.first_name || 'Test',
+            last_name: session.user.user_metadata?.last_name || 'User',
           });
         }
       } catch (error) {
@@ -76,8 +76,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: session.user.id,
           email: session.user.email || '',
           role: role,
-          firstName: session.user.user_metadata?.first_name || 'Test',
-          lastName: session.user.user_metadata?.last_name || 'User',
+          first_name: session.user.user_metadata?.first_name || 'Test',
+          last_name: session.user.user_metadata?.last_name || 'User',
         });
       } else {
         setUser(null);

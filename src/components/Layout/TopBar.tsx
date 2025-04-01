@@ -27,8 +27,8 @@ export const TopBar = ({ toggleSidebar, sidebarCollapsed }: TopBarProps) => {
     navigate('/login');
   };
 
-  const userInitials = user?.firstName && user?.lastName
-    ? `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
+  const userInitials = user?.first_name && user?.last_name
+    ? `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
     : user?.email?.substring(0, 2).toUpperCase() || 'IR';
 
   return (
@@ -62,7 +62,7 @@ export const TopBar = ({ toggleSidebar, sidebarCollapsed }: TopBarProps) => {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-9 w-9 rounded-full">
               <Avatar>
-                <AvatarImage src={user?.avatarUrl || ''} alt={user?.firstName || 'User'} />
+                <AvatarImage src={user?.avatar_url || ''} alt={user?.first_name || 'User'} />
                 <AvatarFallback className="bg-ir-primary text-ir-foreground">
                   {userInitials}
                 </AvatarFallback>
@@ -73,7 +73,7 @@ export const TopBar = ({ toggleSidebar, sidebarCollapsed }: TopBarProps) => {
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium leading-none">
-                  {user?.firstName ? `${user.firstName} ${user.lastName}` : user?.email}
+                  {user?.first_name ? `${user.first_name} ${user.last_name}` : user?.email}
                 </p>
                 <p className="text-xs leading-none text-muted-foreground">
                   {user?.role.charAt(0).toUpperCase() + user?.role.slice(1)}
