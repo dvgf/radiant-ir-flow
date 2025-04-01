@@ -48,29 +48,31 @@ export async function submitReport(data: SubmissionData) {
         console.log('Webhook triggered:', response);
         
         // Update submission with reference ID if available
-        if (response && response.reference_id) {
+        if (response && response.reference_id && submissionData) {
           await supabase
             .from('report_submissions' as any)
             .update({
               keragon_reference: response.reference_id,
               submission_status: 'processing'
             })
-            .eq('id', submissionData?.id);
+            .eq('id', submissionData.id);
         }
       } catch (webhookError) {
         console.error('Error triggering webhook:', webhookError);
         
         // Update submission status to failed
-        await supabase
-          .from('report_submissions' as any)
-          .update({
-            submission_status: 'failed',
-            details: {
-              ...(submissionData?.details || {}),
-              error: (webhookError as Error).message
-            }
-          })
-          .eq('id', submissionData?.id);
+        if (submissionData) {
+          await supabase
+            .from('report_submissions' as any)
+            .update({
+              submission_status: 'failed',
+              details: {
+                ...(submissionData.details || {}),
+                error: (webhookError as Error).message
+              }
+            })
+            .eq('id', submissionData.id);
+        }
           
         throw webhookError;
       }
