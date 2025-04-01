@@ -50,6 +50,7 @@ export interface CaseReport {
 }
 
 export interface BillingCode {
+  id: string; // Adding the missing id property
   code: string;
   description: string;
   category: 'CPT' | 'ICD10';

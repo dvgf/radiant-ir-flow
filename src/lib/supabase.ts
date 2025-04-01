@@ -1,6 +1,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../types/supabase';
+import { CaseSummary, CaseReport, CaseBilling } from '../types';
 
 // These environment variables will need to be set in Supabase project settings
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
