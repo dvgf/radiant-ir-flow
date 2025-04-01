@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { CaseBilling, BillingCode, Provider } from '@/types';
 import { Label } from '@/components/ui/label';
@@ -179,7 +178,7 @@ const BillingSection: React.FC<BillingSectionProps> = ({
           <SelectTrigger id="provider" className="w-full">
             <SelectValue placeholder={providersLoading ? "Loading providers..." : "Select a provider"} />
           </SelectTrigger>
-          <SelectContent className="max-h-80 overflow-y-auto">
+          <SelectContent position="popper" className="max-h-80 overflow-y-auto bg-background">
             {providersLoading ? (
               <div className="p-4 flex items-center justify-center">
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -232,7 +231,7 @@ const BillingSection: React.FC<BillingSectionProps> = ({
                         <SelectTrigger>
                           <SelectValue placeholder="Select" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent position="popper" className="bg-background">
                           <SelectItem value="none">None</SelectItem>
                           <SelectItem value="LT">LT</SelectItem>
                           <SelectItem value="RT">RT</SelectItem>
