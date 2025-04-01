@@ -62,15 +62,17 @@ export async function submitReport(data: SubmissionData) {
         
         // Update submission status to failed
         if (submissionData) {
-          // Get the existing details or use an empty object
-          const currentDetails = submissionData.details || {};
+          // Convert details to a plain object no matter what it is
+          const safeDetails = typeof submissionData.details === 'object' && submissionData.details !== null 
+            ? submissionData.details 
+            : {};
           
           await supabase
             .from('report_submissions')
             .update({
               submission_status: 'failed',
               details: {
-                ...currentDetails,
+                ...safeDetails,
                 error: (webhookError as Error).message
               }
             })
