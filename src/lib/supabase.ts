@@ -1,17 +1,12 @@
-
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../types/supabase';
 import { CaseSummary, CaseReport, CaseBilling } from '../types';
 
-// These environment variables will need to be set in Supabase project settings
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// Use the values from the Supabase integration client
+import { supabase as supabaseClient } from '../integrations/supabase/client';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables. Please check your setup.');
-}
-
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+// Export the client that's already properly configured
+export const supabase = supabaseClient;
 
 export async function fetchTodaysProcedures() {
   const today = new Date().toISOString().split('T')[0];
