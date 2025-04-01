@@ -7,8 +7,9 @@ import { TemplateCodeAssociation } from '@/types';
 // Function to fetch template-code associations
 export async function fetchTemplateCodeAssociations() {
   try {
+    // Need to cast to any because the table isn't in the types yet
     const { data, error } = await supabase
-      .from('template_code_associations')
+      .from('template_code_associations' as any)
       .select('*');
       
     if (error) {
@@ -26,9 +27,10 @@ export async function fetchTemplateCodeAssociations() {
 // Function to save a template-code association
 export async function saveTemplateCodeAssociation(association: TemplateCodeAssociation) {
   try {
+    // Need to cast to any because the table isn't in the types yet
     const { data, error } = await supabase
-      .from('template_code_associations')
-      .upsert(association, { onConflict: 'template_id,code_id' })
+      .from('template_code_associations' as any)
+      .upsert(association as any)
       .select();
       
     if (error) {
@@ -46,8 +48,9 @@ export async function saveTemplateCodeAssociation(association: TemplateCodeAssoc
 // Function to delete a template-code association
 export async function deleteTemplateCodeAssociation(id: string) {
   try {
+    // Need to cast to any because the table isn't in the types yet
     const { error } = await supabase
-      .from('template_code_associations')
+      .from('template_code_associations' as any)
       .delete()
       .eq('id', id);
       

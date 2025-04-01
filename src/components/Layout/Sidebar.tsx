@@ -9,8 +9,11 @@ import {
   Activity, 
   Calendar, 
   FileQuestion,
-  TagsIcon
+  TagsIcon,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
+import { useState } from 'react';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -18,6 +21,12 @@ interface SidebarProps {
 }
 
 export const Sidebar = ({ collapsed, userRole }: SidebarProps) => {
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+
+  const toggleTemplates = () => {
+    setTemplatesOpen(!templatesOpen);
+  };
+
   return (
     <aside
       className={`bg-ir-muted border-r border-ir-border transition-all duration-300 ${
@@ -107,29 +116,58 @@ export const Sidebar = ({ collapsed, userRole }: SidebarProps) => {
               )}
             </div>
 
-            <NavLink
-              to="/templates"
-              className={({ isActive }) =>
-                `ir-sidebar-item ${isActive ? 'active' : ''} ${
-                  collapsed ? 'justify-center' : ''
-                } mb-1`
-              }
-            >
-              <FileQuestion className="h-5 w-5" />
-              {!collapsed && <span>Templates</span>}
-            </NavLink>
-
-            <NavLink
-              to="/template-codes"
-              className={({ isActive }) =>
-                `ir-sidebar-item ${isActive ? 'active' : ''} ${
-                  collapsed ? 'justify-center' : ''
-                } mb-1`
-              }
-            >
-              <TagsIcon className="h-5 w-5" />
-              {!collapsed && <span>Template Codes</span>}
-            </NavLink>
+            {!collapsed ? (
+              <div className="mb-1">
+                <button 
+                  onClick={toggleTemplates}
+                  className="ir-sidebar-item w-full flex justify-between"
+                >
+                  <div className="flex items-center">
+                    <FileQuestion className="h-5 w-5 mr-2" />
+                    <span>Templates</span>
+                  </div>
+                  {templatesOpen ? (
+                    <ChevronDown className="h-4 w-4" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4" />
+                  )}
+                </button>
+                
+                {templatesOpen && (
+                  <div className="ml-6 mt-1 space-y-1">
+                    <NavLink
+                      to="/templates"
+                      className={({ isActive }) =>
+                        `ir-sidebar-item ${isActive ? 'active' : ''}`
+                      }
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span>Template Editor</span>
+                    </NavLink>
+                    <NavLink
+                      to="/template-codes"
+                      className={({ isActive }) =>
+                        `ir-sidebar-item ${isActive ? 'active' : ''}`
+                      }
+                    >
+                      <TagsIcon className="h-4 w-4" />
+                      <span>Billing Codes</span>
+                    </NavLink>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <NavLink
+                to="/templates"
+                className={({ isActive }) =>
+                  `ir-sidebar-item ${isActive ? 'active' : ''} ${
+                    collapsed ? 'justify-center' : ''
+                  } mb-1`
+                }
+              >
+                <FileQuestion className="h-5 w-5" />
+              </NavLink>
+            )}
 
             <NavLink
               to="/providers"

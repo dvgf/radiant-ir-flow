@@ -4,6 +4,17 @@ import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/components/Layout/AppLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { 
   Select, 
   SelectContent, 
@@ -11,17 +22,6 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Template, BillingCode, TemplateCodeAssociation } from '@/types';
 import { 
   fetchTemplateCodeAssociations, 
@@ -39,8 +39,8 @@ export default function TemplateCodes() {
   const [associations, setAssociations] = useState<TemplateCodeAssociation[]>([]);
   
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
-  const [selectedCptCode, setSelectedCptCode] = useState<string>('');
-  const [selectedIcd10Code, setSelectedIcd10Code] = useState<string>('');
+  const [selectedCptCodes, setSelectedCptCodes] = useState<string[]>([]);
+  const [selectedIcd10Codes, setSelectedIcd10Codes] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<string>('cpt');
 
   useEffect(() => {
@@ -69,75 +69,101 @@ export default function TemplateCodes() {
     loadData();
   }, [toast]);
 
-  const handleAssociateCptCode = async () => {
-    if (!selectedTemplate || !selectedCptCode) {
+  useEffect(() => {
+    // Reset selected code arrays when template changes
+    setSelectedCptCodes([]);
+    setSelectedIcd10Codes([]);
+  }, [selectedTemplate]);
+
+  const toggleCptCode = (codeId: string) => {
+    setSelectedCptCodes(prev => 
+      prev.includes(codeId) ? prev.filter(id => id !== codeId) : [...prev, codeId]
+    );
+  };
+
+  const toggleIcd10Code = (codeId: string) => {
+    setSelectedIcd10Codes(prev => 
+      prev.includes(codeId) ? prev.filter(id => id !== codeId) : [...prev, codeId]
+    );
+  };
+
+  const handleAssociateCptCodes = async () => {
+    if (!selectedTemplate || selectedCptCodes.length === 0) {
       toast({
         title: 'Error',
-        description: 'Please select both a template and a CPT code',
+        description: 'Please select both a template and at least one CPT code',
         variant: 'destructive',
       });
       return;
     }
 
     try {
-      const newAssociation: TemplateCodeAssociation = {
-        template_id: selectedTemplate,
-        code_id: selectedCptCode,
-        code_type: 'CPT'
-      };
+      // Save all selected CPT codes
+      for (const codeId of selectedCptCodes) {
+        const newAssociation: TemplateCodeAssociation = {
+          template_id: selectedTemplate,
+          code_id: codeId,
+          code_type: 'CPT'
+        };
+        
+        await saveTemplateCodeAssociation(newAssociation);
+      }
       
-      await saveTemplateCodeAssociation(newAssociation);
       const updatedAssociations = await fetchTemplateCodeAssociations();
       setAssociations(updatedAssociations);
       
       toast({
         title: 'Success',
-        description: 'CPT code associated with template',
+        description: 'CPT codes associated with template',
       });
       
-      setSelectedCptCode('');
+      setSelectedCptCodes([]);
     } catch (error) {
-      console.error('Error associating CPT code:', error);
+      console.error('Error associating CPT codes:', error);
       toast({
         title: 'Error',
-        description: 'Failed to associate CPT code',
+        description: 'Failed to associate CPT codes',
         variant: 'destructive',
       });
     }
   };
 
-  const handleAssociateIcd10Code = async () => {
-    if (!selectedTemplate || !selectedIcd10Code) {
+  const handleAssociateIcd10Codes = async () => {
+    if (!selectedTemplate || selectedIcd10Codes.length === 0) {
       toast({
         title: 'Error',
-        description: 'Please select both a template and an ICD-10 code',
+        description: 'Please select both a template and at least one ICD-10 code',
         variant: 'destructive',
       });
       return;
     }
 
     try {
-      const newAssociation: TemplateCodeAssociation = {
-        template_id: selectedTemplate,
-        code_id: selectedIcd10Code,
-        code_type: 'ICD10'
-      };
+      // Save all selected ICD-10 codes
+      for (const codeId of selectedIcd10Codes) {
+        const newAssociation: TemplateCodeAssociation = {
+          template_id: selectedTemplate,
+          code_id: codeId,
+          code_type: 'ICD10'
+        };
+        
+        await saveTemplateCodeAssociation(newAssociation);
+      }
       
-      await saveTemplateCodeAssociation(newAssociation);
       const updatedAssociations = await fetchTemplateCodeAssociations();
       setAssociations(updatedAssociations);
       
       toast({
         title: 'Success',
-        description: 'ICD-10 code associated with template',
+        description: 'ICD-10 codes associated with template',
       });
       
-      setSelectedIcd10Code('');
+      setSelectedIcd10Codes([]);
     } catch (error) {
-      console.error('Error associating ICD-10 code:', error);
+      console.error('Error associating ICD-10 codes:', error);
       toast({
         title: 'Error',
-        description: 'Failed to associate ICD-10 code',
+        description: 'Failed to associate ICD-10 codes',
         variant: 'destructive',
       });
     }
@@ -214,29 +240,34 @@ export default function TemplateCodes() {
               <TabsContent value="cpt">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Associate CPT Code</CardTitle>
-                    <CardDescription>Link a CPT code to the selected template</CardDescription>
+                    <CardTitle>Associate CPT Codes</CardTitle>
+                    <CardDescription>Select CPT codes to link to the selected template</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="cptCode">CPT Code</Label>
-                        <Select value={selectedCptCode} onValueChange={setSelectedCptCode}>
-                          <SelectTrigger id="cptCode" className="w-full">
-                            <SelectValue placeholder="Select a CPT code" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {cptCodes.map((code) => (
-                              <SelectItem key={code.id} value={code.id}>
-                                {code.code} - {code.description}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {cptCodes.map((code) => (
+                          <div key={code.id} className="flex items-start space-x-2">
+                            <Checkbox 
+                              id={`cpt-${code.id}`} 
+                              checked={selectedCptCodes.includes(code.id)}
+                              onCheckedChange={() => toggleCptCode(code.id)}
+                            />
+                            <Label 
+                              htmlFor={`cpt-${code.id}`}
+                              className="text-sm leading-tight cursor-pointer"
+                            >
+                              {code.code} - {code.description}
+                            </Label>
+                          </div>
+                        ))}
                       </div>
                       
-                      <Button onClick={handleAssociateCptCode}>
-                        Associate CPT Code
+                      <Button 
+                        onClick={handleAssociateCptCodes}
+                        disabled={selectedCptCodes.length === 0}
+                      >
+                        Associate Selected CPT Codes
                       </Button>
                     </div>
                     
@@ -276,29 +307,34 @@ export default function TemplateCodes() {
               <TabsContent value="icd10">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Associate ICD-10 Code</CardTitle>
-                    <CardDescription>Link an ICD-10 code to the selected template</CardDescription>
+                    <CardTitle>Associate ICD-10 Codes</CardTitle>
+                    <CardDescription>Select ICD-10 codes to link to the selected template</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="icd10Code">ICD-10 Code</Label>
-                        <Select value={selectedIcd10Code} onValueChange={setSelectedIcd10Code}>
-                          <SelectTrigger id="icd10Code" className="w-full">
-                            <SelectValue placeholder="Select an ICD-10 code" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {icd10Codes.map((code) => (
-                              <SelectItem key={code.id} value={code.id}>
-                                {code.code} - {code.description}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {icd10Codes.map((code) => (
+                          <div key={code.id} className="flex items-start space-x-2">
+                            <Checkbox 
+                              id={`icd10-${code.id}`} 
+                              checked={selectedIcd10Codes.includes(code.id)}
+                              onCheckedChange={() => toggleIcd10Code(code.id)}
+                            />
+                            <Label 
+                              htmlFor={`icd10-${code.id}`}
+                              className="text-sm leading-tight cursor-pointer"
+                            >
+                              {code.code} - {code.description}
+                            </Label>
+                          </div>
+                        ))}
                       </div>
                       
-                      <Button onClick={handleAssociateIcd10Code}>
-                        Associate ICD-10 Code
+                      <Button 
+                        onClick={handleAssociateIcd10Codes}
+                        disabled={selectedIcd10Codes.length === 0}
+                      >
+                        Associate Selected ICD-10 Codes
                       </Button>
                     </div>
                     
