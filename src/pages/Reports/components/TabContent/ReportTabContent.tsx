@@ -23,34 +23,21 @@ const ReportTabContent: React.FC<ReportTabContentProps> = ({
   } = useReportContext();
 
   return (
-    <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Report</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {procedure && report && (
-            <ReportSection
-              report={report}
-              setReport={setReport}
-              procedureId={procedure.id}
-              onComplete={(isComplete) => setReportComplete(isComplete)}
-            />
-          )}
-        </CardContent>
-      </Card>
-      <div className="flex justify-between mt-4">
-        <Button variant="outline" onClick={() => setActiveTab('billing')}>
-          Previous: Billing
-        </Button>
-        <Button 
-          onClick={togglePreviewMode}
-          disabled={!reportComplete}
-        >
-          Preview Report
-        </Button>
-      </div>
-    </>
+    <Card>
+      <CardHeader>
+        <CardTitle>Report</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {procedure && report && (
+          <ReportSection
+            report={report}
+            setReport={setReport}
+            procedureId={procedure.id}
+            onComplete={(isComplete) => setReportComplete(isComplete)}
+          />
+        )}
+      </CardContent>
+    </Card>
   );
 };
 

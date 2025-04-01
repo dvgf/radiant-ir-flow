@@ -1,15 +1,15 @@
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/Layout/AppLayout';
-import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 
 // Import contexts
 import { ReportProvider, useReportContext } from './contexts/ReportContext';
 
 // Import components
-import ReportTabs from './components/ReportTabs';
 import ReportActions from './components/ReportActions';
 import ReportPreview from './components/ReportPreview';
 import SubmissionDialog from './components/SubmissionDialog';
@@ -31,7 +31,6 @@ const ReportEditorContent = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  const [activeTab, setActiveTab] = useState('details');
   const [previewMode, setPreviewMode] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -91,7 +90,7 @@ const ReportEditorContent = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold tracking-tight">Report Editor</h1>
         <ReportActions 
@@ -101,28 +100,43 @@ const ReportEditorContent = () => {
         />
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <ReportTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+      <div className="space-y-8">
+        {/* Procedure Details Section */}
+        <div className="border-b pb-6">
+          <h2 className="text-xl font-semibold mb-4">Procedure Details</h2>
+          <DetailsTabContent setActiveTab={() => {}} />
+        </div>
         
-        <TabsContent value="details">
-          <DetailsTabContent setActiveTab={setActiveTab} />
-        </TabsContent>
+        {/* Case Summary Section */}
+        <div className="border-b pb-6">
+          <h2 className="text-xl font-semibold mb-4">Case Summary</h2>
+          <SummaryTabContent setActiveTab={() => {}} />
+        </div>
         
-        <TabsContent value="summary">
-          <SummaryTabContent setActiveTab={setActiveTab} />
-        </TabsContent>
+        {/* Billing Section */}
+        <div className="border-b pb-6">
+          <h2 className="text-xl font-semibold mb-4">Billing Information</h2>
+          <BillingTabContent setActiveTab={() => {}} />
+        </div>
         
-        <TabsContent value="billing">
-          <BillingTabContent setActiveTab={setActiveTab} />
-        </TabsContent>
-        
-        <TabsContent value="report">
+        {/* Report Section */}
+        <div>
+          <h2 className="text-xl font-semibold mb-4">Report</h2>
           <ReportTabContent 
-            setActiveTab={setActiveTab} 
+            setActiveTab={() => {}} 
             togglePreviewMode={togglePreviewMode} 
           />
-        </TabsContent>
-      </Tabs>
+        </div>
+      </div>
+      
+      <div className="flex justify-end mt-8">
+        <Button 
+          onClick={togglePreviewMode}
+          disabled={!useReportContext().reportComplete}
+        >
+          Preview Report
+        </Button>
+      </div>
     </div>
   );
 };
