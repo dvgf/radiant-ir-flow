@@ -67,8 +67,11 @@ const SubmissionDialog: React.FC<SubmissionDialogProps> = ({
         webhookUrl: procedure.webhook_url
       };
       
+      console.log('Submitting report with data:', submissionData);
+      
       // Submit the report
-      await submitReport(submissionData);
+      const result = await submitReport(submissionData);
+      console.log('Submission result:', result);
       
       toast({
         title: 'Report Submitted',
