@@ -6,7 +6,7 @@ import { X } from 'lucide-react';
 interface SelectedCodesListProps {
   selectedCptCodes: Array<{code: string, modifier?: 'LT' | 'RT'} | string>;
   selectedIcd10Codes: string[];
-  toggleCptCode: (code: string) => void;
+  toggleCptCode: (code: string, modifier?: 'LT' | 'RT') => void;
   toggleIcd10Code: (code: string) => void;
 }
 
