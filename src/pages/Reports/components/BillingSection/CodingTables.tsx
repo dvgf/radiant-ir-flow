@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -44,7 +44,7 @@ const CodingTables: React.FC<CodingTablesProps> = ({
   };
 
   return (
-    <>
+    <Tabs value={activeTab} defaultValue={activeTab}>
       <TabsContent value="cpt">
         <Table>
           <TableHeader>
@@ -136,7 +136,7 @@ const CodingTables: React.FC<CodingTablesProps> = ({
           </TableBody>
         </Table>
       </TabsContent>
-    </>
+    </Tabs>
   );
 };
 

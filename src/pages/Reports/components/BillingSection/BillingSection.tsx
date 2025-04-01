@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { CaseBilling } from '@/types';
 import { Card } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { fetchProviders } from '@/lib/supabase/providers-and-codes';
 import { loadTemplatesAndCodes } from '@/lib/supabase/template-codes';
 import { useToast } from '@/hooks/use-toast';
