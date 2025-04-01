@@ -49,6 +49,7 @@ export type Database = {
           case_id: string
           created_at: string | null
           id: string
+          pdf_url: string | null
           report_text: string
           updated_at: string | null
         }
@@ -56,6 +57,7 @@ export type Database = {
           case_id: string
           created_at?: string | null
           id?: string
+          pdf_url?: string | null
           report_text: string
           updated_at?: string | null
         }
@@ -63,6 +65,7 @@ export type Database = {
           case_id?: string
           created_at?: string | null
           id?: string
+          pdf_url?: string | null
           report_text?: string
           updated_at?: string | null
         }
@@ -191,6 +194,50 @@ export type Database = {
           provider_name?: string
         }
         Relationships: []
+      }
+      report_submissions: {
+        Row: {
+          athena_id: string | null
+          details: Json | null
+          id: string
+          keragon_reference: string | null
+          procedure_id: string
+          submission_status: string
+          submission_type: string
+          submitted_at: string
+          submitted_by: string
+        }
+        Insert: {
+          athena_id?: string | null
+          details?: Json | null
+          id?: string
+          keragon_reference?: string | null
+          procedure_id: string
+          submission_status?: string
+          submission_type: string
+          submitted_at?: string
+          submitted_by: string
+        }
+        Update: {
+          athena_id?: string | null
+          details?: Json | null
+          id?: string
+          keragon_reference?: string | null
+          procedure_id?: string
+          submission_status?: string
+          submission_type?: string
+          submitted_at?: string
+          submitted_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_submissions_procedure_id_fkey"
+            columns: ["procedure_id"]
+            isOneToOne: false
+            referencedRelation: "procedures"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       template_code_associations: {
         Row: {

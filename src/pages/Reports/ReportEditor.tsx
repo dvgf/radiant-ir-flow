@@ -1,46 +1,45 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/Layout/AppLayout';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableFooter,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { fetchProcedure, fetchProviders, fetchCaseSummary, fetchCaseReport, fetchCaseBilling, fetchBillingCodes } from '@/lib/supabase';
-import { Procedure, CaseSummary, CaseReport, CaseBilling, Provider, BillingCode, CaseStatus } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { fetchProcedure, fetchCaseSummary, fetchCaseReport, fetchCaseBilling } from '@/lib/supabase';
+import { saveCaseSummary, saveCaseReport, saveCaseBilling } from '@/lib/supabase';
+import { Procedure, CaseSummary, CaseReport, CaseBilling } from '@/types';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
-interface CPTCode extends BillingCode {
-  modifier?: 'LT' | 'RT';
-}
+// Import our new components
+import ProcedureDetails from './components/ProcedureDetails';
+import CaseSummarySection from './components/CaseSummarySection';
+import BillingSection from './components/BillingSection';
+import ReportSection from './components/ReportSection';
+import ReportPreview from './components/ReportPreview';
+import SubmissionDialog from './components/SubmissionDialog';
 
 const ReportEditor = () => {
   const { procedureId } = useParams<{ procedureId: string }>();
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [procedure, setProcedure] = useState<Procedure | null>(null);
   const [summary, setSummary] = useState<CaseSummary | null>(null);
   const [report, setReport] = useState<CaseReport | null>(null);
   const [billing, setBilling] = useState<CaseBilling | null>(null);
-  const [providers, setProviders] = useState<Provider[]>([]);
-  const [selectedProviderId, setSelectedProviderId] = useState<string>('');
-  const [cptCodes, setCptCodes] = useState<BillingCode[]>([]);
-  const [icd10Codes, setIcd10Codes] = useState<BillingCode[]>([]);
-  const [selectedCptCodes, setSelectedCptCodes] = useState<Array<{code: string, modifier?: 'LT' | 'RT'}>>([]);
-  const [selectedIcd10Codes, setSelectedIcd10Codes] = useState<string[]>([]);
-  const [operators, setOperators] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState('details');
+  const [previewMode, setPreviewMode] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Validation states
+  const [summaryComplete, setSummaryComplete] = useState(false);
+  const [billingComplete, setBillingComplete] = useState(false);
+  const [reportComplete, setReportComplete] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -49,31 +48,53 @@ const ReportEditor = () => {
           throw new Error('Procedure ID is missing.');
         }
 
+        setLoading(true);
         const procedureData = await fetchProcedure(procedureId);
         const summaryData = await fetchCaseSummary(procedureId);
         const reportData = await fetchCaseReport(procedureId);
         const billingData = await fetchCaseBilling(procedureId);
-        const providersData = await fetchProviders();
-        const cptCodesData = await fetchBillingCodes('CPT');
-        const icd10CodesData = await fetchBillingCodes('ICD10');
 
         setProcedure(procedureData);
-        setSummary(summaryData);
-        setReport(reportData);
-        setBilling(billingData);
-        setProviders(providersData);
-        setCptCodes(cptCodesData);
-        setIcd10Codes(icd10CodesData);
+        setSummary(summaryData || {
+          id: '',
+          procedure_id: procedureId,
+          summary_text: '',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          created_by: user?.id || 'system',
+          mrn: procedureData.mrn
+        });
+        
+        setReport(reportData || {
+          id: '',
+          procedure_id: procedureId,
+          report_text: '',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          created_by: user?.id || 'system'
+        });
+        
+        setBilling(billingData || {
+          id: '',
+          procedure_id: procedureId,
+          billing_codes: [],
+          diagnosis_codes: [],
+          operators: {},
+          provider_id: '',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          created_by: user?.id || 'system',
+          mrn: procedureData.mrn
+        });
 
-        if (billingData) {
-          setSelectedProviderId(billingData.provider_id || '');
-          setSelectedCptCodes(billingData.billing_codes || []);
-          setSelectedIcd10Codes(billingData.diagnosis_codes || []);
-          
-          if (billingData.operators) {
-            setOperators(billingData.operators);
-          }
+        // Check if sections are complete
+        if (summaryData?.summary_text) setSummaryComplete(true);
+        if (billingData?.provider_id && 
+            billingData.billing_codes.length > 0 && 
+            billingData.diagnosis_codes.length > 0) {
+          setBillingComplete(true);
         }
+        if (reportData?.report_text) setReportComplete(true);
 
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -82,17 +103,123 @@ const ReportEditor = () => {
           description: 'Failed to load data for this procedure.',
           variant: 'destructive',
         });
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchData();
-  }, [procedureId, toast]);
+  }, [procedureId, toast, user?.id]);
+
+  const handleSave = async () => {
+    if (!procedure || !user) return;
+    
+    try {
+      setSaving(true);
+      
+      // Save summary
+      if (summary) {
+        await saveCaseSummary({
+          ...summary,
+          created_by: summary.created_by || user.id,
+        });
+      }
+      
+      // Save report
+      if (report) {
+        await saveCaseReport({
+          ...report,
+          created_by: report.created_by || user.id,
+        });
+      }
+      
+      // Save billing
+      if (billing) {
+        await saveCaseBilling({
+          ...billing,
+          created_by: billing.created_by || user.id,
+        });
+      }
+      
+      toast({
+        title: 'Success',
+        description: 'Report data saved successfully.',
+      });
+    } catch (error) {
+      console.error('Error saving data:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save report data.',
+        variant: 'destructive',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const togglePreviewMode = () => {
+    if (!previewMode) {
+      // Save data before preview
+      handleSave();
+    }
+    setPreviewMode(!previewMode);
+  };
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (!procedure) {
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-full">
-          <p>Loading...</p>
+          <p>Procedure not found.</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (previewMode) {
+    return (
+      <AppLayout>
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold tracking-tight">Report Preview</h1>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={togglePreviewMode}>
+                Edit Report
+              </Button>
+              <Button 
+                disabled={!summaryComplete || !billingComplete || !reportComplete}
+                onClick={() => setDialogOpen(true)}
+              >
+                Submit Report
+              </Button>
+            </div>
+          </div>
+          
+          <ReportPreview 
+            procedure={procedure}
+            summary={summary}
+            report={report}
+            billing={billing}
+          />
+          
+          <SubmissionDialog
+            open={dialogOpen}
+            onOpenChange={setDialogOpen}
+            procedure={procedure}
+            summary={summary}
+            report={report}
+            billing={billing}
+            userId={user?.id || 'unknown'}
+          />
         </div>
       </AppLayout>
     );
@@ -103,118 +230,138 @@ const ReportEditor = () => {
       <div className="space-y-4">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold tracking-tight">Report Editor</h1>
-          <Button>Save</Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleSave}
+              disabled={saving}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : 'Save'}
+            </Button>
+            <Button 
+              onClick={togglePreviewMode}
+              disabled={!summaryComplete || !billingComplete || !reportComplete}
+            >
+              Preview
+            </Button>
+          </div>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Procedure Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="space-y-1">
-                <Label htmlFor="patientName">Patient Name</Label>
-                <Input id="patientName" value={procedure.patient_name} disabled />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="mrn">MRN</Label>
-                <Input id="mrn" value={procedure.mrn} disabled />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="procedureName">Procedure Name</Label>
-                <Input id="procedureName" value={procedure.procedure_name} disabled />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Billing Information</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="space-y-1">
-                <Label htmlFor="provider">Provider</Label>
-                <Select 
-                  value={selectedProviderId}
-                  onValueChange={setSelectedProviderId}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a provider" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {providers.map((provider) => (
-                      <SelectItem key={provider.id} value={provider.id}>
-                        {provider.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1">
-                <Label>CPT Codes</Label>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Code</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Modifier</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {cptCodes.map((code) => (
-                      <TableRow key={code.id}>
-                        <TableCell>{code.code}</TableCell>
-                        <TableCell>{code.description}</TableCell>
-                        <TableCell>
-                          <Select defaultValue="none">
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">None</SelectItem>
-                              <SelectItem value="LT">LT</SelectItem>
-                              <SelectItem value="RT">RT</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              <div className="space-y-1">
-                <Label>ICD-10 Codes</Label>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Code</TableHead>
-                      <TableHead>Description</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {icd10Codes.map((code) => (
-                      <TableRow key={code.id}>
-                        <TableCell>{code.code}</TableCell>
-                        <TableCell>{code.description}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Report</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Textarea placeholder="Enter report text here." value={report?.report_text || ''} />
-          </CardContent>
-        </Card>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid grid-cols-4 w-full">
+            <TabsTrigger value="details">1. Procedure Details</TabsTrigger>
+            <TabsTrigger value="summary" disabled={!procedure}>2. Case Summary</TabsTrigger>
+            <TabsTrigger value="billing" disabled={!procedure || !summaryComplete}>3. Billing</TabsTrigger>
+            <TabsTrigger value="report" disabled={!procedure || !summaryComplete || !billingComplete}>4. Report</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="details">
+            <Card>
+              <CardHeader>
+                <CardTitle>Procedure Details</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {procedure && <ProcedureDetails procedure={procedure} />}
+              </CardContent>
+            </Card>
+            <div className="flex justify-end mt-4">
+              <Button onClick={() => setActiveTab('summary')}>
+                Next: Case Summary
+              </Button>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="summary">
+            <Card>
+              <CardHeader>
+                <CardTitle>Case Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {procedure && summary && (
+                  <CaseSummarySection
+                    summary={summary}
+                    setSummary={setSummary}
+                    onComplete={(isComplete) => setSummaryComplete(isComplete)}
+                  />
+                )}
+              </CardContent>
+            </Card>
+            <div className="flex justify-between mt-4">
+              <Button variant="outline" onClick={() => setActiveTab('details')}>
+                Previous: Procedure Details
+              </Button>
+              <Button 
+                onClick={() => setActiveTab('billing')}
+                disabled={!summaryComplete}
+              >
+                Next: Billing
+              </Button>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="billing">
+            <Card>
+              <CardHeader>
+                <CardTitle>Billing Information</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {procedure && billing && (
+                  <BillingSection
+                    billing={billing}
+                    setBilling={setBilling}
+                    procedureId={procedure.id}
+                    onComplete={(isComplete) => setBillingComplete(isComplete)}
+                  />
+                )}
+              </CardContent>
+            </Card>
+            <div className="flex justify-between mt-4">
+              <Button variant="outline" onClick={() => setActiveTab('summary')}>
+                Previous: Case Summary
+              </Button>
+              <Button 
+                onClick={() => setActiveTab('report')}
+                disabled={!billingComplete}
+              >
+                Next: Report
+              </Button>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="report">
+            <Card>
+              <CardHeader>
+                <CardTitle>Report</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {procedure && report && (
+                  <ReportSection
+                    report={report}
+                    setReport={setReport}
+                    procedureId={procedure.id}
+                    onComplete={(isComplete) => setReportComplete(isComplete)}
+                  />
+                )}
+              </CardContent>
+            </Card>
+            <div className="flex justify-between mt-4">
+              <Button variant="outline" onClick={() => setActiveTab('billing')}>
+                Previous: Billing
+              </Button>
+              <Button 
+                onClick={togglePreviewMode}
+                disabled={!reportComplete}
+              >
+                Preview Report
+              </Button>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </AppLayout>
   );
