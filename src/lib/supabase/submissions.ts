@@ -18,9 +18,9 @@ export async function submitReport(data: SubmissionData) {
   try {
     const { procedureId, userId, submissionType, webhookUrl } = data;
     
-    // Create a submission record
+    // Create a submission record - using the "from" method with type casting to handle the new table
     const { data: submissionData, error } = await supabase
-      .from('report_submissions')
+      .from('report_submissions' as any)
       .insert({
         procedure_id: procedureId,
         submitted_by: userId,
@@ -49,7 +49,7 @@ export async function submitReport(data: SubmissionData) {
         // Update submission with reference ID if available
         if (response && response.reference_id) {
           await supabase
-            .from('report_submissions')
+            .from('report_submissions' as any)
             .update({
               keragon_reference: response.reference_id,
               submission_status: 'processing'
@@ -61,7 +61,7 @@ export async function submitReport(data: SubmissionData) {
         
         // Update submission status to failed
         await supabase
-          .from('report_submissions')
+          .from('report_submissions' as any)
           .update({
             submission_status: 'failed',
             details: {
@@ -105,7 +105,7 @@ export async function submitReport(data: SubmissionData) {
 export async function getSubmissionStatus(submissionId: string) {
   try {
     const { data, error } = await supabase
-      .from('report_submissions')
+      .from('report_submissions' as any)
       .select('*')
       .eq('id', submissionId)
       .single();
@@ -125,7 +125,7 @@ export async function getSubmissionStatus(submissionId: string) {
 export async function updateSubmissionStatus(submissionId: string, status: string, details?: any) {
   try {
     const { data, error } = await supabase
-      .from('report_submissions')
+      .from('report_submissions' as any)
       .update({
         submission_status: status,
         ...(details ? { details } : {})

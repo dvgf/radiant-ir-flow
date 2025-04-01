@@ -65,6 +65,12 @@ export type ReportStatus =
   | 'Summary Only'
   | 'Submitted';
 
+export type SubmissionStatus =
+  | 'pending'
+  | 'processing'
+  | 'completed'
+  | 'failed';
+
 export interface Procedure {
   id: string;
   patient_name: string;
@@ -121,4 +127,21 @@ export interface CaseBilling {
   created_by: string;
   mrn?: string;
   submitted_at?: string;
+}
+
+export interface ReportSubmission {
+  id: string;
+  procedure_id: string;
+  submitted_by: string;
+  submitted_at: string;
+  submission_type: 'Complete' | 'Summary Only' | 'Billing Only';
+  submission_status: SubmissionStatus;
+  athena_id?: string;
+  keragon_reference?: string;
+  details?: {
+    summary?: string;
+    report?: string;
+    billing?: any;
+    error?: string;
+  };
 }
