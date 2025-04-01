@@ -6,7 +6,7 @@ import {
   fetchProcedures, 
   updateTechNotes, 
   triggerKeragonWebhook 
-} from '@/lib/supabase';
+} from '@/lib/supabase'; // This import still works due to the compatibility file
 import { Procedure } from '@/types';
 import { 
   RefreshCw, 
