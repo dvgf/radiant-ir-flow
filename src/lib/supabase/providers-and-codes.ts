@@ -1,26 +1,40 @@
+
 import { supabase } from './client';
 import { BillingCode, Provider } from '../../types';
 
 export async function fetchProviders() {
-  const { data, error } = await supabase
-    .from('providers')
-    .select('*');
+  try {
+    const { data, error } = await supabase
+      .from('providers')
+      .select('*');
+      
+    if (error) {
+      console.error('Error fetching providers:', error);
+      throw error;
+    }
     
-  if (error) {
-    console.error('Error fetching providers:', error);
-    throw error;
+    if (!data || data.length === 0) {
+      console.log('No providers found in the database');
+      return [];
+    }
+    
+    console.log('Fetched providers:', data);
+    
+    // Map provider data to match our Provider interface
+    return data.map((provider: any) => ({
+      id: provider.id || provider.provider_id.toString(),
+      name: provider.provider_name || provider.name || `${provider.initials} (${provider.provider_id})`,
+      provider_id: provider.provider_id,
+      initials: provider.initials,
+      npi: provider.npi || provider.provider_id.toString(),
+      specialty: provider.specialty || 'Unknown', 
+      active: provider.active !== false, // Default to true if not specified
+    }));
+  } catch (error) {
+    console.error('Error in fetchProviders:', error);
+    // Return empty array rather than throwing, to avoid UI crashes
+    return [];
   }
-  
-  // Map provider data to match our Provider interface
-  return data.map((provider: any) => ({
-    id: provider.provider_id.toString(),
-    name: provider.name || provider.provider_name, // Use name if available, otherwise use provider_name
-    provider_id: provider.provider_id,
-    initials: provider.initials,
-    npi: provider.provider_id.toString(),
-    specialty: 'Unknown', // Set default as the field may not exist
-    active: true, // Set default as the field may not exist
-  }));
 }
 
 export async function fetchBillingCodes(category: 'CPT' | 'ICD10') {

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { CaseBilling, BillingCode, Provider } from '@/types';
 import { Label } from '@/components/ui/label';
@@ -5,9 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { fetchProviders, fetchBillingCodes } from '@/lib/supabase';
+import { fetchProviders, fetchBillingCodes } from '@/lib/supabase/providers-and-codes';
 import { fetchTemplateCodeAssociations, loadTemplatesAndCodes } from '@/lib/supabase/template-codes';
-import { Check, X } from 'lucide-react';
+import { Check, X, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface BillingSectionProps {
@@ -29,6 +30,7 @@ const BillingSection: React.FC<BillingSectionProps> = ({
   const [selectedCptCodes, setSelectedCptCodes] = useState<Array<{code: string, modifier?: 'LT' | 'RT'}>>([]);
   const [selectedIcd10Codes, setSelectedIcd10Codes] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [providersLoading, setProvidersLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('cpt');
   const { toast } = useToast();
 
@@ -37,12 +39,15 @@ const BillingSection: React.FC<BillingSectionProps> = ({
       try {
         setLoading(true);
         
+        // First fetch providers
+        setProvidersLoading(true);
         const providersData = await fetchProviders();
-        const billingData = await loadTemplatesAndCodes();
-        
         console.log('Fetched providers:', providersData);
-        
         setProviders(providersData);
+        setProvidersLoading(false);
+        
+        // Then fetch codes
+        const billingData = await loadTemplatesAndCodes();
         setCptCodes(billingData.billingCodes.cpt);
         setIcd10Codes(billingData.billingCodes.icd10);
         
@@ -53,8 +58,8 @@ const BillingSection: React.FC<BillingSectionProps> = ({
       } catch (error) {
         console.error('Error fetching billing data:', error);
         toast({
-          title: "Error loading providers",
-          description: "Could not load provider data. Please try again.",
+          title: "Error loading data",
+          description: "Could not load provider or code data. Please try again.",
           variant: "destructive"
         });
       } finally {
@@ -167,19 +172,27 @@ const BillingSection: React.FC<BillingSectionProps> = ({
       <div>
         <Label htmlFor="provider">Provider</Label>
         <Select
-          value={billing.provider_id}
+          value={billing.provider_id || ""}
           onValueChange={handleProviderChange}
+          disabled={providersLoading}
         >
           <SelectTrigger id="provider" className="w-full">
-            <SelectValue placeholder="Select a provider" />
+            <SelectValue placeholder={providersLoading ? "Loading providers..." : "Select a provider"} />
           </SelectTrigger>
           <SelectContent className="max-h-80 overflow-y-auto">
-            {providers.length === 0 ? (
-              <div className="p-2 text-center text-muted-foreground">No providers available</div>
+            {providersLoading ? (
+              <div className="p-4 flex items-center justify-center">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <span>Loading providers...</span>
+              </div>
+            ) : providers.length === 0 ? (
+              <div className="p-4 text-center text-muted-foreground">
+                No providers available in database
+              </div>
             ) : (
               providers.map((provider) => (
                 <SelectItem key={provider.id} value={provider.id}>
-                  {provider.name || provider.initials}
+                  {provider.name || `${provider.initials} (${provider.provider_id})`}
                 </SelectItem>
               ))
             )}
