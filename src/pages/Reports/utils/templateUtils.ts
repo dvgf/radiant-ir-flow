@@ -63,6 +63,17 @@ export const generateTemplateText = (
         templateText += `### ${section.title}\n${sectionContent}\n\n`;
       }
     });
+  } else if (typeof template.content === 'string') {
+    // For templates with just a content field instead of sections
+    let content = template.content;
+    
+    // Replace variables in the content
+    Object.entries(variables).forEach(([name, value]) => {
+      const variablePattern = new RegExp(`\\{\\{${name}\\}\\}`, 'g');
+      content = content.replace(variablePattern, value || `{{${name}}}`);
+    });
+    
+    templateText += content;
   }
   
   return templateText;
