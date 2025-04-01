@@ -128,6 +128,7 @@ export type Database = {
           priority: string | null
           procedure_name: string
           status: string | null
+          tech_notes: string | null
           updated_at: string | null
           webhook_url: string | null
         }
@@ -147,6 +148,7 @@ export type Database = {
           priority?: string | null
           procedure_name: string
           status?: string | null
+          tech_notes?: string | null
           updated_at?: string | null
           webhook_url?: string | null
         }
@@ -166,6 +168,7 @@ export type Database = {
           priority?: string | null
           procedure_name?: string
           status?: string | null
+          tech_notes?: string | null
           updated_at?: string | null
           webhook_url?: string | null
         }

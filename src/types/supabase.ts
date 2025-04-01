@@ -1,4 +1,3 @@
-
 // Import Json from the integrations/supabase/types file to avoid circular imports
 import { Json } from '../integrations/supabase/types';
 
@@ -13,12 +12,12 @@ export type Database = {
           procedure_name: string
           laterality: string
           status: string
-          appointment_time: string
+          appointment_time?: string
           date?: string // For backward compatibility
-          dob: string | null
+          dob?: string | null
           location: string | null
-          auth_number: string | null
-          insurance_company: string | null
+          auth_number?: string | null
+          insurance_company?: string | null
           line1_full: string | null
           tech_notes: string | null
           webhook_url: string | null
@@ -28,15 +27,17 @@ export type Database = {
           DOB: string | null
           AUTH: string | null
           COMP: string | null
+          patient_sex: string | null
+          priority: string | null
         }
         Insert: {
           id?: string
           patient_name: string
           mrn: string
           procedure_name: string
-          laterality: string
-          status: string
-          appointment_time: string
+          laterality?: string
+          status?: string
+          appointment_time?: string
           date?: string // For backward compatibility
           dob?: string | null
           location?: string | null
@@ -51,6 +52,8 @@ export type Database = {
           DOB?: string | null
           AUTH?: string | null
           COMP?: string | null
+          patient_sex?: string | null
+          priority?: string | null
         }
         Update: {
           id?: string
@@ -74,6 +77,8 @@ export type Database = {
           DOB?: string | null
           AUTH?: string | null
           COMP?: string | null
+          patient_sex?: string | null
+          priority?: string | null
         }
       }
       case_summaries: {

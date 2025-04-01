@@ -114,7 +114,6 @@ export async function updateProcedureLocation(id: string, location: string) {
 }
 
 export async function updateTechNotes(id: string, tech_notes: string) {
-  // First check if tech_notes column exists
   try {
     const { error } = await supabase
       .from('procedures')
@@ -126,9 +125,8 @@ export async function updateTechNotes(id: string, tech_notes: string) {
       throw error;
     }
   } catch (error) {
-    // If tech_notes doesn't exist, try updating a different field
-    console.error('Failed to update tech_notes, it may not exist:', error);
-    // You might want to handle this case or create a migration to add the field
+    console.error('Failed to update tech_notes:', error);
+    // Log error but don't throw to prevent app crashes
   }
 }
 
@@ -151,9 +149,9 @@ export async function fetchCaseSummary(procedureId: string): Promise<CaseSummary
     id: data.id,
     procedure_id: data.case_id, // Map case_id to procedure_id
     summary_text: data.summary_text,
-    created_at: data.created_at,
-    updated_at: data.updated_at,
-    created_by: data.created_at, // Use created_at as created_by
+    created_at: data.created_at || new Date().toISOString(),
+    updated_at: data.updated_at || new Date().toISOString(),
+    created_by: data.created_at || new Date().toISOString(), // Use created_at as created_by
     mrn: data.mrn
   };
 }
@@ -177,14 +175,15 @@ export async function fetchCaseReport(procedureId: string): Promise<CaseReport |
     id: data.id,
     procedure_id: data.case_id, // Map case_id to procedure_id
     report_text: data.report_text,
-    pdf_url: data.report_text ? undefined : undefined, // Set default pdf_url as undefined
-    created_at: data.created_at,
-    updated_at: data.updated_at,
-    created_by: data.created_at // Use created_at as created_by
+    pdf_url: undefined, // Set default pdf_url as undefined
+    created_at: data.created_at || new Date().toISOString(),
+    updated_at: data.updated_at || new Date().toISOString(),
+    created_by: data.created_at || new Date().toISOString() // Use created_at as created_by
   };
 }
 
 export async function fetchCaseBilling(procedureId: string): Promise<CaseBilling | null> {
+  // Try to find a case_billing entry that matches the procedureId
   const { data, error } = await supabase
     .from('case_billing')
     .select('*')
@@ -312,6 +311,7 @@ export async function fetchProviders() {
   return data.map((provider: any) => ({
     id: provider.provider_id.toString(),
     provider_name: provider.provider_name,
+    name: provider.name || provider.provider_name, // Use name if available, otherwise use provider_name
     provider_id: provider.provider_id,
     initials: provider.initials,
     npi: provider.provider_id.toString(),
@@ -322,7 +322,7 @@ export async function fetchProviders() {
 
 export async function fetchBillingCodes(category: 'CPT' | 'ICD10') {
   try {
-    // Fallback to mock data since we're having issues with the table
+    // Use mock data since the billing_codes table may not exist
     const mockCodes = category === 'CPT' 
       ? [
           { id: '1', code: '36901', description: 'Diagnostic angiography', category: 'CPT' as const },
