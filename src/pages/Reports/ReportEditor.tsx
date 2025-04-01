@@ -144,7 +144,7 @@ const ReportEditor = () => {
                   <SelectContent>
                     {providers.map((provider) => (
                       <SelectItem key={provider.id} value={provider.id}>
-                        {provider.provider_name}
+                        {provider.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

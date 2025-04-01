@@ -192,6 +192,38 @@ export type Database = {
         }
         Relationships: []
       }
+      template_code_associations: {
+        Row: {
+          code_id: string
+          code_type: string
+          created_at: string
+          id: string
+          template_id: string
+        }
+        Insert: {
+          code_id: string
+          code_type: string
+          created_at?: string
+          id?: string
+          template_id: string
+        }
+        Update: {
+          code_id?: string
+          code_type?: string
+          created_at?: string
+          id?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_code_associations_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       templates: {
         Row: {
           author: string | null

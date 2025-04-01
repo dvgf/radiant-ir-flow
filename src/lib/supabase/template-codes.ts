@@ -16,7 +16,7 @@ export async function fetchTemplateCodeAssociations() {
       return [];
     }
     
-    return data;
+    return data as TemplateCodeAssociation[];
   } catch (error) {
     console.error('Error in fetchTemplateCodeAssociations:', error);
     return [];
@@ -36,7 +36,7 @@ export async function saveTemplateCodeAssociation(association: TemplateCodeAssoc
       throw error;
     }
     
-    return data;
+    return data[0] as TemplateCodeAssociation;
   } catch (error) {
     console.error('Error in saveTemplateCodeAssociation:', error);
     throw error;

@@ -1,17 +1,9 @@
 
-import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/Layout/AppLayout';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Select, 
   SelectContent, 
@@ -19,80 +11,69 @@ import {
   SelectTrigger, 
   SelectValue 
 } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
+import { Template, BillingCode, TemplateCodeAssociation } from '@/types';
 import { 
-  Plus, 
-  Loader2, 
-  Trash2, 
-  Tags as TagsIcon
-} from 'lucide-react';
-import { 
-  loadTemplatesAndCodes, 
-  fetchTemplateCodeAssociations,
-  saveTemplateCodeAssociation,
-  deleteTemplateCodeAssociation
-} from '@/lib/supabase';
-import { BillingCode, Template, TemplateCodeAssociation } from '@/types';
+  fetchTemplateCodeAssociations, 
+  saveTemplateCodeAssociation, 
+  deleteTemplateCodeAssociation,
+  loadTemplatesAndCodes 
+} from '@/lib/supabase/template-codes';
 
-const TemplateCodes = () => {
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
-  const [selectedCodeType, setSelectedCodeType] = useState<'CPT' | 'ICD10'>('CPT');
-  const [selectedCode, setSelectedCode] = useState<string>('');
-  const [associations, setAssociations] = useState<TemplateCodeAssociation[]>([]);
+export default function TemplateCodes() {
   const { toast } = useToast();
-  const { user } = useAuth();
-
-  // Fetch templates and billing codes
-  const { data: templateAndCodesData, isLoading: isLoadingTemplatesAndCodes } = useQuery({
-    queryKey: ['templatesAndCodes'],
-    queryFn: loadTemplatesAndCodes
-  });
-
-  // Fetch existing associations
-  const { 
-    data: associationsData, 
-    isLoading: isLoadingAssociations,
-    refetch: refetchAssociations 
-  } = useQuery({
-    queryKey: ['templateCodeAssociations'],
-    queryFn: fetchTemplateCodeAssociations
-  });
+  const [loading, setLoading] = useState(true);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [cptCodes, setCptCodes] = useState<BillingCode[]>([]);
+  const [icd10Codes, setIcd10Codes] = useState<BillingCode[]>([]);
+  const [associations, setAssociations] = useState<TemplateCodeAssociation[]>([]);
+  
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+  const [selectedCptCode, setSelectedCptCode] = useState<string>('');
+  const [selectedIcd10Code, setSelectedIcd10Code] = useState<string>('');
+  const [activeTab, setActiveTab] = useState<string>('cpt');
 
   useEffect(() => {
-    if (associationsData) {
-      setAssociations(associationsData);
+    async function loadData() {
+      try {
+        setLoading(true);
+        const { templates, billingCodes } = await loadTemplatesAndCodes();
+        const associations = await fetchTemplateCodeAssociations();
+        
+        setTemplates(templates);
+        setCptCodes(billingCodes.cpt);
+        setIcd10Codes(billingCodes.icd10);
+        setAssociations(associations);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load templates and codes',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
     }
-  }, [associationsData]);
+    
+    loadData();
+  }, [toast]);
 
-  // Only admins should access this page
-  if (user?.role !== 'admin') {
-    toast({
-      title: 'Access Denied',
-      description: 'You do not have permission to access this page.',
-      variant: 'destructive',
-    });
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  const templates = templateAndCodesData?.templates || [];
-  const cptCodes = templateAndCodesData?.billingCodes.cpt || [];
-  const icd10Codes = templateAndCodesData?.billingCodes.icd10 || [];
-
-  const currentBillingCodes = selectedCodeType === 'CPT' ? cptCodes : icd10Codes;
-
-  const handleAddAssociation = async () => {
-    if (!selectedTemplate || !selectedCode) {
+  const handleAssociateCptCode = async () => {
+    if (!selectedTemplate || !selectedCptCode) {
       toast({
-        title: 'Missing information',
-        description: 'Please select a template and a billing code.',
+        title: 'Error',
+        description: 'Please select both a template and a CPT code',
         variant: 'destructive',
       });
       return;
@@ -101,27 +82,62 @@ const TemplateCodes = () => {
     try {
       const newAssociation: TemplateCodeAssociation = {
         template_id: selectedTemplate,
-        code_id: selectedCode,
-        code_type: selectedCodeType
+        code_id: selectedCptCode,
+        code_type: 'CPT'
       };
-
+      
       await saveTemplateCodeAssociation(newAssociation);
+      const updatedAssociations = await fetchTemplateCodeAssociations();
+      setAssociations(updatedAssociations);
       
       toast({
         title: 'Success',
-        description: 'Template code association saved successfully.',
+        description: 'CPT code associated with template',
       });
       
-      // Reset selected values
-      setSelectedCode('');
-      
-      // Refresh associations
-      refetchAssociations();
+      setSelectedCptCode('');
     } catch (error) {
-      console.error('Error adding template code association:', error);
+      console.error('Error associating CPT code:', error);
       toast({
         title: 'Error',
-        description: 'Failed to save template code association.',
+        description: 'Failed to associate CPT code',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleAssociateIcd10Code = async () => {
+    if (!selectedTemplate || !selectedIcd10Code) {
+      toast({
+        title: 'Error',
+        description: 'Please select both a template and an ICD-10 code',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const newAssociation: TemplateCodeAssociation = {
+        template_id: selectedTemplate,
+        code_id: selectedIcd10Code,
+        code_type: 'ICD10'
+      };
+      
+      await saveTemplateCodeAssociation(newAssociation);
+      const updatedAssociations = await fetchTemplateCodeAssociations();
+      setAssociations(updatedAssociations);
+      
+      toast({
+        title: 'Success',
+        description: 'ICD-10 code associated with template',
+      });
+      
+      setSelectedIcd10Code('');
+    } catch (error) {
+      console.error('Error associating ICD-10 code:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to associate ICD-10 code',
         variant: 'destructive',
       });
     }
@@ -130,169 +146,200 @@ const TemplateCodes = () => {
   const handleDeleteAssociation = async (id: string) => {
     try {
       await deleteTemplateCodeAssociation(id);
+      setAssociations(associations.filter(a => a.id !== id));
       
       toast({
         title: 'Success',
-        description: 'Template code association deleted successfully.',
+        description: 'Association removed',
       });
-      
-      // Refresh associations
-      refetchAssociations();
     } catch (error) {
-      console.error('Error deleting template code association:', error);
+      console.error('Error deleting association:', error);
       toast({
         title: 'Error',
-        description: 'Failed to delete template code association.',
+        description: 'Failed to remove association',
         variant: 'destructive',
       });
     }
   };
 
-  // Helper function to find template name by ID
-  const getTemplateName = (templateId: string) => {
-    const template = templates.find(t => t.id === templateId);
-    return template ? template.name : 'Unknown Template';
+  const getTemplateNameById = (id: string) => {
+    const template = templates.find(t => t.id === id);
+    return template?.name || 'Unknown Template';
   };
 
-  // Helper function to find code by ID and type
-  const getCodeDetails = (codeId: string, codeType: 'CPT' | 'ICD10') => {
-    const codesArray = codeType === 'CPT' ? cptCodes : icd10Codes;
-    const code = codesArray.find(c => c.id === codeId);
+  const getCodeById = (id: string, type: 'CPT' | 'ICD10') => {
+    const codes = type === 'CPT' ? cptCodes : icd10Codes;
+    const code = codes.find(c => c.id === id);
     return code ? `${code.code} - ${code.description}` : 'Unknown Code';
   };
 
-  const isLoading = isLoadingTemplatesAndCodes || isLoadingAssociations;
+  const filteredAssociations = associations.filter(
+    a => a.template_id === selectedTemplate && a.code_type === activeTab.toUpperCase()
+  );
 
   return (
     <AppLayout>
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold tracking-tight">Template Code Associations</h1>
-        </div>
-
-        <p className="text-muted-foreground">
-          Associate templates with CPT and ICD10 billing codes for reporting and billing.
-        </p>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Add New Association</CardTitle>
-            <CardDescription>
-              Link templates to billing codes for standardized reporting
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <Select
-                  value={selectedTemplate}
-                  onValueChange={setSelectedTemplate}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Template" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {templates.map((template) => (
-                      <SelectItem key={template.id} value={template.id}>
-                        {template.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Select
-                  value={selectedCodeType}
-                  onValueChange={(value) => setSelectedCodeType(value as 'CPT' | 'ICD10')}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Code Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="CPT">CPT</SelectItem>
-                    <SelectItem value="ICD10">ICD10</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Select
-                  value={selectedCode}
-                  onValueChange={setSelectedCode}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Code" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {currentBillingCodes.map((code: BillingCode) => (
-                      <SelectItem key={code.id} value={code.id}>
-                        {code.code} - {code.description}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div>
-                <Button onClick={handleAddAssociation} className="w-full">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Association
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Current Associations</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex items-center justify-center h-24">
-                <Loader2 className="h-8 w-8 animate-spin text-ir-primary" />
-              </div>
-            ) : associations.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Template</TableHead>
-                    <TableHead>Code Type</TableHead>
-                    <TableHead>Code</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {associations.map((association) => (
-                    <TableRow key={association.id}>
-                      <TableCell>{getTemplateName(association.template_id)}</TableCell>
-                      <TableCell>{association.code_type}</TableCell>
-                      <TableCell>{getCodeDetails(association.code_id, association.code_type)}</TableCell>
-                      <TableCell className="text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => association.id && handleDeleteAssociation(association.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+      <div className="container mx-auto py-6">
+        <h1 className="text-2xl font-bold mb-6">Template Code Associations</h1>
+        
+        <div className="grid grid-cols-1 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Select Template</CardTitle>
+              <CardDescription>Choose a template to associate with codes</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a template" />
+                </SelectTrigger>
+                <SelectContent>
+                  {templates.map((template) => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.name}
+                    </SelectItem>
                   ))}
-                </TableBody>
-              </Table>
-            ) : (
-              <div className="text-center py-8">
-                <TagsIcon className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">No associations found. Create your first one above.</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                </SelectContent>
+              </Select>
+            </CardContent>
+          </Card>
+          
+          {selectedTemplate && (
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="cpt">CPT Codes</TabsTrigger>
+                <TabsTrigger value="icd10">ICD-10 Codes</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="cpt">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Associate CPT Code</CardTitle>
+                    <CardDescription>Link a CPT code to the selected template</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="cptCode">CPT Code</Label>
+                        <Select value={selectedCptCode} onValueChange={setSelectedCptCode}>
+                          <SelectTrigger id="cptCode" className="w-full">
+                            <SelectValue placeholder="Select a CPT code" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {cptCodes.map((code) => (
+                              <SelectItem key={code.id} value={code.id}>
+                                {code.code} - {code.description}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <Button onClick={handleAssociateCptCode}>
+                        Associate CPT Code
+                      </Button>
+                    </div>
+                    
+                    {filteredAssociations.length > 0 && (
+                      <div className="mt-6">
+                        <h3 className="text-lg font-medium mb-2">Associated CPT Codes</h3>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Code</TableHead>
+                              <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {filteredAssociations.map((assoc) => (
+                              <TableRow key={assoc.id}>
+                                <TableCell>{getCodeById(assoc.code_id, 'CPT')}</TableCell>
+                                <TableCell className="text-right">
+                                  <Button 
+                                    variant="destructive" 
+                                    size="sm"
+                                    onClick={() => assoc.id && handleDeleteAssociation(assoc.id)}
+                                  >
+                                    Remove
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              
+              <TabsContent value="icd10">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Associate ICD-10 Code</CardTitle>
+                    <CardDescription>Link an ICD-10 code to the selected template</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="icd10Code">ICD-10 Code</Label>
+                        <Select value={selectedIcd10Code} onValueChange={setSelectedIcd10Code}>
+                          <SelectTrigger id="icd10Code" className="w-full">
+                            <SelectValue placeholder="Select an ICD-10 code" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {icd10Codes.map((code) => (
+                              <SelectItem key={code.id} value={code.id}>
+                                {code.code} - {code.description}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <Button onClick={handleAssociateIcd10Code}>
+                        Associate ICD-10 Code
+                      </Button>
+                    </div>
+                    
+                    {filteredAssociations.length > 0 && (
+                      <div className="mt-6">
+                        <h3 className="text-lg font-medium mb-2">Associated ICD-10 Codes</h3>
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Code</TableHead>
+                              <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {filteredAssociations.map((assoc) => (
+                              <TableRow key={assoc.id}>
+                                <TableCell>{getCodeById(assoc.code_id, 'ICD10')}</TableCell>
+                                <TableCell className="text-right">
+                                  <Button 
+                                    variant="destructive" 
+                                    size="sm"
+                                    onClick={() => assoc.id && handleDeleteAssociation(assoc.id)}
+                                  >
+                                    Remove
+                                  </Button>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          )}
+          
+          {loading && <p className="text-center">Loading...</p>}
+        </div>
       </div>
     </AppLayout>
   );
-};
-
-export default TemplateCodes;
+}
