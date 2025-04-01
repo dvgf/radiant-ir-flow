@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { CaseBilling } from '@/types';
 import { Card } from '@/components/ui/card';
@@ -183,7 +184,7 @@ const BillingSection: React.FC<BillingSectionProps> = ({
         loading={providersLoading}
       />
 
-      <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-2 mb-4">
           <TabsTrigger value="cpt">CPT Codes</TabsTrigger>
           <TabsTrigger value="icd10">ICD-10 Codes</TabsTrigger>

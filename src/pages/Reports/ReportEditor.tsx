@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/Layout/AppLayout';
-import { TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -105,24 +105,26 @@ const ReportEditorContent = () => {
 
       <ReportTabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      <TabsContent value="details">
-        <DetailsTabContent setActiveTab={setActiveTab} />
-      </TabsContent>
-      
-      <TabsContent value="summary">
-        <SummaryTabContent setActiveTab={setActiveTab} />
-      </TabsContent>
-      
-      <TabsContent value="billing">
-        <BillingTabContent setActiveTab={setActiveTab} />
-      </TabsContent>
-      
-      <TabsContent value="report">
-        <ReportTabContent 
-          setActiveTab={setActiveTab} 
-          togglePreviewMode={togglePreviewMode} 
-        />
-      </TabsContent>
+      <Tabs value={activeTab}>
+        <TabsContent value="details">
+          <DetailsTabContent setActiveTab={setActiveTab} />
+        </TabsContent>
+        
+        <TabsContent value="summary">
+          <SummaryTabContent setActiveTab={setActiveTab} />
+        </TabsContent>
+        
+        <TabsContent value="billing">
+          <BillingTabContent setActiveTab={setActiveTab} />
+        </TabsContent>
+        
+        <TabsContent value="report">
+          <ReportTabContent 
+            setActiveTab={setActiveTab} 
+            togglePreviewMode={togglePreviewMode} 
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
