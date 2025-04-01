@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import AppLayout from '@/components/Layout/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -29,11 +28,9 @@ const Worklist = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // State for unique values for filters
   const [uniqueProcedureTypes, setUniqueProcedureTypes] = useState<string[]>([]);
   const [uniqueStatuses, setUniqueStatuses] = useState<string[]>([]);
 
-  // Current filter values
   const [currentFilters, setCurrentFilters] = useState({
     showTodayOnly: true,
     startDate: new Date(),
@@ -196,7 +193,21 @@ const Worklist = () => {
   };
 
   const handleFilterChange = (filters) => {
-    setCurrentFilters(filters);
+    const updatedFilters = { ...filters };
+    
+    if (updatedFilters.procedureType === 'all-procedures') {
+      updatedFilters.procedureType = '';
+    }
+    
+    if (updatedFilters.status === 'all-statuses') {
+      updatedFilters.status = '';
+    }
+    
+    if (updatedFilters.reportStatus === 'all-report-statuses') {
+      updatedFilters.reportStatus = '';
+    }
+    
+    setCurrentFilters(updatedFilters);
   };
 
   return (

@@ -98,7 +98,7 @@ const WorklistFilters = ({
                   <SelectValue placeholder="All Procedures" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Procedures</SelectItem>
+                  <SelectItem value="all-procedures">All Procedures</SelectItem>
                   {uniqueProcedureTypes.map((type) => (
                     <SelectItem key={type} value={type}>{type}</SelectItem>
                   ))}
@@ -113,7 +113,7 @@ const WorklistFilters = ({
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Statuses</SelectItem>
+                  <SelectItem value="all-statuses">All Statuses</SelectItem>
                   {uniqueStatuses.map((status) => (
                     <SelectItem key={status} value={status}>{status}</SelectItem>
                   ))}
@@ -128,7 +128,7 @@ const WorklistFilters = ({
                   <SelectValue placeholder="All Report Statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Report Statuses</SelectItem>
+                  <SelectItem value="all-report-statuses">All Report Statuses</SelectItem>
                   <SelectItem value="Not Started">Not Started</SelectItem>
                   <SelectItem value="Summary Only">Summary Only</SelectItem>
                   <SelectItem value="Complete">Complete</SelectItem>
