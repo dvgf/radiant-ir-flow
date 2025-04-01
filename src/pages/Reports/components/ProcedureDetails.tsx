@@ -50,7 +50,7 @@ const ProcedureDetails: React.FC<ProcedureDetailsProps> = ({ procedure }) => {
           </div>
           
           <div>
-            <h3 className="text-sm font-medium text-muted-foreground">Authorization Number</h3>
+            <h3 className="text-sm font-medium text-muted-foreground">Authorization</h3>
             <p className="text-lg font-semibold">{procedure.auth_number || procedure.AUTH || 'N/A'}</p>
           </div>
           

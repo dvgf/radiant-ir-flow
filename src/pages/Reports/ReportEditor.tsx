@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/Layout/AppLayout';
@@ -38,7 +37,6 @@ const ReportEditorContent = () => {
 
   const togglePreviewMode = () => {
     if (!previewMode) {
-      // Save data before preview
       useReportContext().handleSave();
     }
     setPreviewMode(!previewMode);
@@ -105,7 +103,7 @@ const ReportEditorContent = () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <ReportTabs activeTab={activeTab} setActiveTab={setActiveTab} />
-
+        
         <TabsContent value="details">
           <DetailsTabContent setActiveTab={setActiveTab} />
         </TabsContent>
