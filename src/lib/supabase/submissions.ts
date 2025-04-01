@@ -67,7 +67,7 @@ export async function submitReport(data: SubmissionData) {
             .update({
               submission_status: 'failed',
               details: {
-                ...(submissionData.details || {}),
+                ...(typeof submissionData.details === 'object' && submissionData.details !== null ? submissionData.details : {}),
                 error: (webhookError as Error).message
               }
             })
@@ -101,49 +101,6 @@ export async function submitReport(data: SubmissionData) {
     return submissionData;
   } catch (error) {
     console.error('Error in submitReport:', error);
-    throw error;
-  }
-}
-
-export async function getSubmissionStatus(submissionId: string) {
-  try {
-    const { data, error } = await supabase
-      .from('report_submissions')
-      .select('*')
-      .eq('id', submissionId)
-      .single();
-      
-    if (error) {
-      console.error('Error fetching submission status:', error);
-      throw error;
-    }
-    
-    return data;
-  } catch (error) {
-    console.error('Error in getSubmissionStatus:', error);
-    throw error;
-  }
-}
-
-export async function updateSubmissionStatus(submissionId: string, status: SubmissionStatus, details?: any) {
-  try {
-    const { data, error } = await supabase
-      .from('report_submissions')
-      .update({
-        submission_status: status,
-        ...(details ? { details } : {})
-      })
-      .eq('id', submissionId)
-      .select();
-      
-    if (error) {
-      console.error('Error updating submission status:', error);
-      throw error;
-    }
-    
-    return data;
-  } catch (error) {
-    console.error('Error in updateSubmissionStatus:', error);
     throw error;
   }
 }
