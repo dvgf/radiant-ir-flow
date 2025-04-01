@@ -32,6 +32,17 @@ const CodingTables: React.FC<CodingTablesProps> = ({
   toggleIcd10Code,
   setModifier
 }) => {
+  // Handle CPT code selection
+  const handleCptCodeSelect = (code: string) => {
+    const modifier = getModifier(code);
+    toggleCptCode(code, modifier);
+  };
+  
+  // Handle modifier change
+  const handleModifierChange = (code: string, value: string) => {
+    setModifier(code, value === "none" ? undefined : value as 'LT' | 'RT');
+  };
+
   return (
     <>
       <TabsContent value="cpt">
@@ -53,14 +64,17 @@ const CodingTables: React.FC<CodingTablesProps> = ({
                   {isCptSelected(code.code) && (
                     <Select
                       value={getModifier(code.code) || "none"}
-                      onValueChange={(value) => 
-                        setModifier(code.code, value === "none" ? undefined : value as 'LT' | 'RT')
-                      }
+                      onValueChange={(value) => handleModifierChange(code.code, value)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
-                      <SelectContent position="popper" className="bg-background">
+                      <SelectContent 
+                        position="popper" 
+                        className="bg-background"
+                        side="bottom"
+                        align="start"
+                      >
                         <SelectItem value="none">None</SelectItem>
                         <SelectItem value="LT">LT</SelectItem>
                         <SelectItem value="RT">RT</SelectItem>
@@ -72,7 +86,7 @@ const CodingTables: React.FC<CodingTablesProps> = ({
                   <Button
                     variant={isCptSelected(code.code) ? "default" : "outline"}
                     size="sm"
-                    onClick={() => toggleCptCode(code.code)}
+                    onClick={() => handleCptCodeSelect(code.code)}
                   >
                     {isCptSelected(code.code) ? (
                       <Check className="h-4 w-4" />

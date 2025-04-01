@@ -1,12 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { CaseBilling } from '@/types';
-import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { fetchProviders } from '@/lib/supabase/providers-and-codes';
 import { loadTemplatesAndCodes } from '@/lib/supabase/template-codes';
-import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import ProviderSelector from './ProviderSelector';
 import CodingTables from './CodingTables';
@@ -181,7 +179,7 @@ const BillingSection: React.FC<BillingSectionProps> = ({
     <div className="space-y-6">
       <ProviderSelector 
         providers={providers}
-        selectedProviderId={billing.provider_id || ""}
+        selectedProviderId={billing?.provider_id || ""}
         onProviderChange={handleProviderChange}
         loading={providersLoading}
       />

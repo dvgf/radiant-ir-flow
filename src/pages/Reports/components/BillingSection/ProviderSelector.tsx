@@ -22,14 +22,20 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
     <div>
       <Label htmlFor="provider">Provider</Label>
       <Select
-        value={selectedProviderId}
+        value={selectedProviderId || undefined}
         onValueChange={onProviderChange}
         disabled={loading}
       >
         <SelectTrigger id="provider" className="w-full">
           <SelectValue placeholder={loading ? "Loading providers..." : "Select a provider"} />
         </SelectTrigger>
-        <SelectContent position="popper" className="max-h-80 overflow-y-auto bg-background">
+        <SelectContent 
+          position="popper" 
+          className="max-h-80 overflow-y-auto"
+          side="bottom"
+          align="start"
+          avoidCollisions={false}
+        >
           {loading ? (
             <div className="p-4 flex items-center justify-center">
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -41,7 +47,7 @@ const ProviderSelector: React.FC<ProviderSelectorProps> = ({
             </div>
           ) : (
             providers.map((provider) => (
-              <SelectItem key={provider.id} value={provider.id}>
+              <SelectItem key={provider.id} value={provider.id} className="cursor-pointer">
                 {provider.name || `${provider.initials} (${provider.provider_id})`}
               </SelectItem>
             ))

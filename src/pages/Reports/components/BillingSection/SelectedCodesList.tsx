@@ -16,6 +16,16 @@ const SelectedCodesList: React.FC<SelectedCodesListProps> = ({
   toggleCptCode,
   toggleIcd10Code
 }) => {
+  // Handle removing a CPT code
+  const handleRemoveCpt = (code: string) => {
+    toggleCptCode(code);
+  };
+  
+  // Handle removing an ICD-10 code
+  const handleRemoveIcd10 = (code: string) => {
+    toggleIcd10Code(code);
+  };
+
   return (
     <div className="mt-6">
       <h3 className="text-base font-medium mb-2">Selected Codes</h3>
@@ -42,7 +52,7 @@ const SelectedCodesList: React.FC<SelectedCodesListProps> = ({
                       variant="ghost"
                       size="icon"
                       className="h-4 w-4 ml-1"
-                      onClick={() => toggleCptCode(code)}
+                      onClick={() => handleRemoveCpt(code)}
                     >
                       <X className="h-3 w-3" />
                     </Button>
@@ -69,7 +79,7 @@ const SelectedCodesList: React.FC<SelectedCodesListProps> = ({
                     variant="ghost"
                     size="icon"
                     className="h-4 w-4 ml-1"
-                    onClick={() => toggleIcd10Code(code)}
+                    onClick={() => handleRemoveIcd10(code)}
                   >
                     <X className="h-3 w-3" />
                   </Button>
