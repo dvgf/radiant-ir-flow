@@ -60,11 +60,6 @@ const ProcedureDetails: React.FC<ProcedureDetailsProps> = ({ procedure }) => {
           </div>
           
           <div>
-            <h3 className="text-sm font-medium text-muted-foreground">Insurance</h3>
-            <p className="text-lg font-semibold">{procedure.insurance_company || procedure.COMP || 'N/A'}</p>
-          </div>
-          
-          <div>
             <h3 className="text-sm font-medium text-muted-foreground">Location</h3>
             <p className="text-lg font-semibold">{procedure.location || 'Unassigned'}</p>
           </div>
