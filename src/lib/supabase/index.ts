@@ -8,3 +8,4 @@ export * from './case-billing';
 export * from './providers-and-codes';
 export * from './templates';
 export * from './webhooks-and-storage';
+export * from './template-codes';

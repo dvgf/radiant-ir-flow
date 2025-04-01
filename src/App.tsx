@@ -14,6 +14,7 @@ import Worklist from "./pages/Worklist";
 import ReportEditor from "./pages/Reports/ReportEditor";
 import TechStatus from "./pages/TechStatus";
 import Templates from "./pages/Templates";
+import TemplateCodes from "./pages/TemplateCodes";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const App = () => (
             
             {/* Admin Routes */}
             <Route path="/templates" element={<Templates />} />
+            <Route path="/template-codes" element={<TemplateCodes />} />
             
             {/* 404 Route */}
             <Route path="*" element={<NotFound />} />

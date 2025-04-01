@@ -8,7 +8,8 @@ import {
   Settings, 
   Activity, 
   Calendar, 
-  FileQuestion 
+  FileQuestion,
+  TagsIcon
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -116,6 +117,18 @@ export const Sidebar = ({ collapsed, userRole }: SidebarProps) => {
             >
               <FileQuestion className="h-5 w-5" />
               {!collapsed && <span>Templates</span>}
+            </NavLink>
+
+            <NavLink
+              to="/template-codes"
+              className={({ isActive }) =>
+                `ir-sidebar-item ${isActive ? 'active' : ''} ${
+                  collapsed ? 'justify-center' : ''
+                } mb-1`
+              }
+            >
+              <TagsIcon className="h-5 w-5" />
+              {!collapsed && <span>Template Codes</span>}
             </NavLink>
 
             <NavLink
