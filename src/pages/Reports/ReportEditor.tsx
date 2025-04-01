@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import AppLayout from '@/components/Layout/AppLayout';
@@ -11,7 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Save, FileDown, Upload, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase, fetchProviders, fetchBillingCodes, saveCaseSummary, saveCaseReport, saveCaseBilling, uploadReportPdf, deliverPdfToKeragon } from '@/lib/supabase';
-import { Procedure, Provider, BillingCode, CaseSummary, CaseReport, CaseBilling } from '@/types';
+import { Procedure, Provider, BillingCode, CaseSummary, CaseReport, CaseBilling, CaseStatus } from '@/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
@@ -63,45 +62,40 @@ const ReportEditor = () => {
           mrn: procedureData.mrn,
           procedure_name: procedureData.procedure_name,
           laterality: procedureData.laterality || '',
-          status: procedureData.status || 'Scheduled',
-          appointment_time: procedureData.appointment_time,
-          dob: procedureData.DOB,
+          status: (procedureData.status || 'Scheduled') as CaseStatus,
+          appointment_time: procedureData.appointment_time || procedureData.date,
+          dob: procedureData.dob || procedureData.DOB,
           location: procedureData.location,
-          auth_number: procedureData.AUTH,
-          insurance_company: procedureData.COMP,
+          auth_number: procedureData.auth_number || procedureData.AUTH,
+          insurance_company: procedureData.insurance_company || procedureData.COMP,
           line1_full: procedureData.line1_full,
           tech_notes: procedureData.tech_notes,
           webhook_url: procedureData.webhook_url,
+          // Include original DB fields for compatibility
+          DOB: procedureData.DOB,
+          AUTH: procedureData.AUTH,
+          COMP: procedureData.COMP,
+          created_at: procedureData.created_at,
+          updated_at: procedureData.updated_at,
+          date: procedureData.date
         };
         
         setProcedure(mappedProcedure);
 
         // Fetch providers
         const providersData = await fetchProviders();
-        
-        // Map provider data to our Provider type
-        const mappedProviders: Provider[] = providersData.map((p: any) => ({
-          id: p.id || p.provider_id.toString(),
-          provider_name: p.provider_name,
-          provider_id: p.provider_id,
-          initials: p.initials,
-          npi: p.npi || p.provider_id.toString(),
-          specialty: p.specialty || 'Unknown',
-          active: p.active !== false, // default to true if not specified
-        }));
-        
-        setProviders(mappedProviders);
+        setProviders(providersData);
         
         // Default to first provider if available
-        if (mappedProviders.length > 0) {
-          setSelectedProvider(mappedProviders[0].id);
+        if (providersData.length > 0) {
+          setSelectedProvider(providersData[0].id);
         }
 
         // Fetch CPT and ICD10 codes
-        const cptData = await fetchBillingCodes('CPT');
-        const icd10Data = await fetchBillingCodes('ICD10');
-        setCptCodes(cptData);
-        setIcd10Codes(icd10Data);
+        const cptCodesData = await fetchBillingCodes('CPT');
+        const icd10CodesData = await fetchBillingCodes('ICD10');
+        setCptCodes(cptCodesData);
+        setIcd10Codes(icd10CodesData);
 
         // Fetch existing summary
         const { data: summaryData, error: summaryError } = await supabase
@@ -136,11 +130,35 @@ const ReportEditor = () => {
 
         if (!billingError && billingData) {
           // Use provider_id or default to first provider
-          const providerId = billingData.provider_id || (mappedProviders.length > 0 ? mappedProviders[0].id : '');
+          const providerId = billingData.provider_id || (providersData.length > 0 ? providersData[0].id : '');
           setSelectedProvider(providerId);
-          setSelectedCptCodes(billingData.billing_codes || []);
+          
+          // Transform billing_codes to match our expected format if needed
+          if (Array.isArray(billingData.billing_codes)) {
+            const formattedBillingCodes = billingData.billing_codes.map((code: any) => {
+              if (typeof code === 'string') {
+                return { code };
+              }
+              return code;
+            });
+            setSelectedCptCodes(formattedBillingCodes);
+          }
+          
           setSelectedIcd10Codes(billingData.diagnosis_codes || []);
-          setOperators(billingData.operators || {});
+          
+          // Handle operators object
+          if (billingData.operators) {
+            let parsedOperators = billingData.operators;
+            if (typeof parsedOperators === 'string') {
+              try {
+                parsedOperators = JSON.parse(parsedOperators);
+              } catch (e) {
+                console.error('Error parsing operators JSON:', e);
+                parsedOperators = {};
+              }
+            }
+            setOperators(parsedOperators as Record<string, string>);
+          }
         }
       } catch (error) {
         console.error('Error fetching report data:', error);
@@ -316,6 +334,10 @@ const ReportEditor = () => {
     }
   };
 
+  const renderReportStatusPill = (status: ReportStatus) => {
+    // ... keep existing code (for rendering status pills)
+  };
+
   if (loading) {
     return (
       <AppLayout>
@@ -478,7 +500,7 @@ const ReportEditor = () => {
                       <SelectContent>
                         {providers.map((provider) => (
                           <SelectItem key={provider.id} value={provider.id}>
-                            {provider.name}
+                            {provider.provider_name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -500,7 +522,7 @@ const ReportEditor = () => {
                           <SelectContent>
                             {providers.map((provider) => (
                               <SelectItem key={provider.id} value={provider.id}>
-                                {provider.name}
+                                {provider.provider_name}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -518,7 +540,7 @@ const ReportEditor = () => {
                           <SelectContent>
                             {providers.map((provider) => (
                               <SelectItem key={provider.id} value={provider.id}>
-                                {provider.name}
+                                {provider.provider_name}
                               </SelectItem>
                             ))}
                           </SelectContent>

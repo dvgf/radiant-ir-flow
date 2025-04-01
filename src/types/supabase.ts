@@ -1,13 +1,7 @@
 
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+import { Json } from '../types/supabase';
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       procedures: {
@@ -19,6 +13,7 @@ export interface Database {
           laterality: string
           status: string
           appointment_time: string
+          date?: string // For backward compatibility
           dob: string | null
           location: string | null
           auth_number: string | null
@@ -28,6 +23,10 @@ export interface Database {
           webhook_url: string | null
           created_at: string
           updated_at: string
+          // Legacy fields
+          DOB: string | null
+          AUTH: string | null
+          COMP: string | null
         }
         Insert: {
           id?: string
@@ -37,6 +36,7 @@ export interface Database {
           laterality: string
           status: string
           appointment_time: string
+          date?: string // For backward compatibility
           dob?: string | null
           location?: string | null
           auth_number?: string | null
@@ -46,6 +46,10 @@ export interface Database {
           webhook_url?: string | null
           created_at?: string
           updated_at?: string
+          // Legacy fields
+          DOB?: string | null
+          AUTH?: string | null
+          COMP?: string | null
         }
         Update: {
           id?: string
@@ -55,6 +59,7 @@ export interface Database {
           laterality?: string
           status?: string
           appointment_time?: string
+          date?: string // For backward compatibility
           dob?: string | null
           location?: string | null
           auth_number?: string | null
@@ -64,12 +69,17 @@ export interface Database {
           webhook_url?: string | null
           created_at?: string
           updated_at?: string
+          // Legacy fields
+          DOB?: string | null
+          AUTH?: string | null
+          COMP?: string | null
         }
       }
       case_summaries: {
         Row: {
           id: string
-          procedure_id: string
+          procedure_id: string // Changed from case_id
+          mrn: string | null
           summary_text: string
           created_at: string
           updated_at: string
@@ -77,7 +87,8 @@ export interface Database {
         }
         Insert: {
           id?: string
-          procedure_id: string
+          procedure_id: string // Changed from case_id
+          mrn?: string | null
           summary_text: string
           created_at?: string
           updated_at?: string
@@ -85,7 +96,8 @@ export interface Database {
         }
         Update: {
           id?: string
-          procedure_id?: string
+          procedure_id?: string // Changed from case_id
+          mrn?: string | null
           summary_text?: string
           created_at?: string
           updated_at?: string
@@ -95,7 +107,7 @@ export interface Database {
       case_reports: {
         Row: {
           id: string
-          procedure_id: string
+          procedure_id: string // Changed from case_id
           report_text: string
           pdf_url: string | null
           created_at: string
@@ -104,7 +116,7 @@ export interface Database {
         }
         Insert: {
           id?: string
-          procedure_id: string
+          procedure_id: string // Changed from case_id
           report_text: string
           pdf_url?: string | null
           created_at?: string
@@ -113,7 +125,7 @@ export interface Database {
         }
         Update: {
           id?: string
-          procedure_id?: string
+          procedure_id?: string // Changed from case_id
           report_text?: string
           pdf_url?: string | null
           created_at?: string
@@ -125,6 +137,7 @@ export interface Database {
         Row: {
           id: string
           procedure_id: string
+          mrn: string | null
           billing_codes: Json
           diagnosis_codes: string[]
           operators: Json
@@ -132,10 +145,12 @@ export interface Database {
           created_at: string
           updated_at: string
           created_by: string
+          submitted_at: string | null
         }
         Insert: {
           id?: string
           procedure_id: string
+          mrn?: string | null
           billing_codes: Json
           diagnosis_codes: string[]
           operators: Json
@@ -143,10 +158,12 @@ export interface Database {
           created_at?: string
           updated_at?: string
           created_by: string
+          submitted_at?: string | null
         }
         Update: {
           id?: string
           procedure_id?: string
+          mrn?: string | null
           billing_codes?: Json
           diagnosis_codes?: string[]
           operators?: Json
@@ -154,21 +171,26 @@ export interface Database {
           created_at?: string
           updated_at?: string
           created_by?: string
+          submitted_at?: string | null
         }
       }
       providers: {
         Row: {
           id: string
-          name: string
+          provider_name: string
+          provider_id: number
+          initials: string
           npi: string
           specialty: string
           active: boolean
-          created_at: string
-          updated_at: string
+          created_at?: string
+          updated_at?: string
         }
         Insert: {
           id?: string
-          name: string
+          provider_name: string
+          provider_id: number
+          initials: string
           npi: string
           specialty: string
           active?: boolean
@@ -177,7 +199,9 @@ export interface Database {
         }
         Update: {
           id?: string
-          name?: string
+          provider_name?: string
+          provider_id?: number
+          initials?: string
           npi?: string
           specialty?: string
           active?: boolean
@@ -244,6 +268,29 @@ export interface Database {
           author?: string
           created_at?: string
           updated_at?: string
+        }
+      }
+      profiles: {
+        Row: {
+          id: string
+          first_name: string | null
+          last_name: string | null
+          avatar_url: string | null
+          role: string
+        }
+        Insert: {
+          id: string
+          first_name?: string | null
+          last_name?: string | null
+          avatar_url?: string | null
+          role?: string
+        }
+        Update: {
+          id?: string
+          first_name?: string | null
+          last_name?: string | null
+          avatar_url?: string | null
+          role?: string
         }
       }
     }

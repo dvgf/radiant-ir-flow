@@ -33,20 +33,22 @@ export interface Procedure {
   COMP?: string;
   created_at?: string;
   updated_at?: string;
+  date?: string; // Added to support the database column until fully migrated
 }
 
 export interface CaseSummary {
   id: string;
-  procedure_id: string;
+  procedure_id: string; // Changed from "case_id" to match DB schema
   summary_text: string;
   created_at: string;
   updated_at: string;
   created_by: string;
+  mrn?: string;
 }
 
 export interface CaseReport {
   id: string;
-  procedure_id: string;
+  procedure_id: string; // Changed from "case_id" to match DB schema
   report_text: string;
   pdf_url?: string;
   created_at: string;
@@ -63,7 +65,7 @@ export interface BillingCode {
 
 export interface CaseBilling {
   id: string;
-  procedure_id: string;
+  procedure_id: string; // Changed from "case_id" to match DB schema
   billing_codes: Array<{code: string, modifier?: 'LT' | 'RT'}>;
   diagnosis_codes: string[];
   operators: Record<string, string>;
@@ -76,7 +78,8 @@ export interface CaseBilling {
 
 export interface Provider {
   id: string;
-  provider_name: string;
+  provider_name: string; // Keep original property name from DB
+  name?: string; // Added for compatibility
   provider_id?: number;
   initials?: string;
   npi: string;

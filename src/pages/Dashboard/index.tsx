@@ -17,6 +17,7 @@ const Dashboard = () => {
   useEffect(() => {
     const loadProcedures = async () => {
       try {
+        setLoading(true);
         const data = await fetchTodaysProcedures();
         setProcedures(data);
       } catch (error) {

@@ -1,7 +1,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../types/supabase';
-import { CaseSummary, CaseReport, CaseBilling } from '../types';
+import { CaseSummary, CaseReport, CaseBilling, Procedure } from '../types';
 
 // Use the values from the Supabase integration client
 import { supabase as supabaseClient } from '../integrations/supabase/client';
@@ -24,7 +24,30 @@ export async function fetchTodaysProcedures() {
     throw error;
   }
   
-  return data;
+  // Map the DB result to the Procedure interface
+  return data.map((p: any) => ({
+    id: p.id,
+    patient_name: p.patient_name,
+    mrn: p.mrn,
+    procedure_name: p.procedure_name,
+    laterality: p.laterality || '',
+    status: p.status || 'Scheduled',
+    appointment_time: p.appointment_time || p.date, // Support both column names
+    dob: p.dob || p.DOB,
+    location: p.location,
+    auth_number: p.auth_number || p.AUTH,
+    insurance_company: p.insurance_company || p.COMP,
+    line1_full: p.line1_full,
+    tech_notes: p.tech_notes,
+    webhook_url: p.webhook_url,
+    // Include original DB fields for compatibility
+    DOB: p.DOB,
+    AUTH: p.AUTH,
+    COMP: p.COMP,
+    created_at: p.created_at,
+    updated_at: p.updated_at,
+    date: p.date
+  }));
 }
 
 export async function updateProcedureStatus(id: string, status: string) {
@@ -64,6 +87,7 @@ export async function updateTechNotes(id: string, tech_notes: string) {
 }
 
 export async function saveCaseSummary(summary: Partial<CaseSummary>) {
+  // Convert to DB schema field names
   const formattedSummary = {
     procedure_id: summary.procedure_id,
     summary_text: summary.summary_text,
@@ -84,6 +108,7 @@ export async function saveCaseSummary(summary: Partial<CaseSummary>) {
 }
 
 export async function saveCaseReport(report: Partial<CaseReport>) {
+  // Convert to DB schema field names
   const formattedReport = {
     procedure_id: report.procedure_id,
     report_text: report.report_text,
@@ -105,8 +130,10 @@ export async function saveCaseReport(report: Partial<CaseReport>) {
 }
 
 export async function saveCaseBilling(billing: Partial<CaseBilling>) {
+  // Convert to DB schema field names
   const formattedBilling = {
     procedure_id: billing.procedure_id,
+    mrn: billing.mrn, // Keep for backward compatibility
     billing_codes: billing.billing_codes,
     diagnosis_codes: billing.diagnosis_codes,
     operators: billing.operators,
@@ -138,47 +165,48 @@ export async function fetchProviders() {
     throw error;
   }
   
-  return data;
+  // Map provider data to match our Provider interface
+  return data.map((provider: any) => ({
+    id: provider.id || provider.provider_id.toString(),
+    provider_name: provider.provider_name,
+    name: provider.provider_name, // Add for compatibility
+    provider_id: provider.provider_id,
+    initials: provider.initials,
+    npi: provider.npi || provider.provider_id.toString(),
+    specialty: provider.specialty || 'Unknown',
+    active: provider.active !== false, // default to true if not specified
+  }));
 }
 
 export async function fetchBillingCodes(category: 'CPT' | 'ICD10') {
-  // Since we don't have a billing_codes table yet, we'll mock this data
-  // Later this should be replaced with an actual query
-  const mockCodes = category === 'CPT' 
-    ? [
-        { id: '1', code: '36901', description: 'Diagnostic angiography', category: 'CPT' },
-        { id: '2', code: '36902', description: 'Thrombectomy', category: 'CPT' },
-        { id: '3', code: '36903', description: 'Stent placement', category: 'CPT' }
-      ]
-    : [
-        { id: '4', code: 'N18.6', description: 'End stage renal disease', category: 'ICD10' },
-        { id: '5', code: 'I82.4', description: 'Venous thrombosis', category: 'ICD10' },
-        { id: '6', code: 'Z99.2', description: 'Dependence on renal dialysis', category: 'ICD10' }
-      ];
-  
-  return mockCodes;
-}
-
-export async function fetchTemplates() {
+  // Use the actual table for billing codes
   const { data, error } = await supabase
-    .from('templates')
+    .from('billing_codes')
     .select('*')
-    .order('name');
+    .eq('category', category);
     
-  if (error) {
-    console.error('Error fetching templates:', error);
-    throw error;
+  if (error || !data) {
+    console.error('Error fetching billing codes:', error);
+    // Fallback to mock data if table doesn't exist or query fails
+    const mockCodes = category === 'CPT' 
+      ? [
+          { id: '1', code: '36901', description: 'Diagnostic angiography', category: 'CPT' as const },
+          { id: '2', code: '36902', description: 'Thrombectomy', category: 'CPT' as const },
+          { id: '3', code: '36903', description: 'Stent placement', category: 'CPT' as const }
+        ]
+      : [
+          { id: '4', code: 'N18.6', description: 'End stage renal disease', category: 'ICD10' as const },
+          { id: '5', code: 'I82.4', description: 'Venous thrombosis', category: 'ICD10' as const },
+          { id: '6', code: 'Z99.2', description: 'Dependence on renal dialysis', category: 'ICD10' as const }
+        ];
+    
+    return mockCodes;
   }
   
-  // Convert jsonb to proper Record objects
-  return data.map(template => ({
-    ...template,
-    sections: typeof template.sections === 'string' 
-      ? JSON.parse(template.sections) 
-      : template.sections,
-    variables: typeof template.variables === 'string' 
-      ? JSON.parse(template.variables) 
-      : template.variables,
+  // Ensure category is correctly typed
+  return data.map(code => ({
+    ...code,
+    category: code.category === 'CPT' ? 'CPT' as const : 'ICD10' as const
   }));
 }
 

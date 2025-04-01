@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import AppLayout from '@/components/Layout/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -59,30 +58,11 @@ const Worklist = () => {
     try {
       setLoading(true);
       const data = await fetchTodaysProcedures();
-      
-      // Map the data to match our Procedure type
-      const mappedProcedures: Procedure[] = data.map((p: any) => ({
-        id: p.id,
-        patient_name: p.patient_name,
-        mrn: p.mrn,
-        procedure_name: p.procedure_name,
-        laterality: p.laterality || '',
-        status: p.status || 'Scheduled',
-        appointment_time: p.appointment_time,
-        dob: p.DOB,
-        location: p.location,
-        auth_number: p.AUTH,
-        insurance_company: p.COMP,
-        line1_full: p.line1_full,
-        tech_notes: p.tech_notes,
-        webhook_url: p.webhook_url,
-      }));
-      
-      setProcedures(mappedProcedures);
+      setProcedures(data);
 
       // Initialize tech notes from procedure data
       const notesMap: Record<string, string> = {};
-      mappedProcedures.forEach(procedure => {
+      data.forEach(procedure => {
         notesMap[procedure.id] = procedure.tech_notes || '';
       });
       setTechNotes(notesMap);
