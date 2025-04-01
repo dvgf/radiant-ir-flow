@@ -228,13 +228,14 @@ const TechStatus = () => {
                       </td>
                       <td>
                         <Select
-                          value={procedure.location || ''}
+                          value={procedure.location || 'none'}
                           onValueChange={(value) => handleLocationChange(procedure.id, value)}
                         >
                           <SelectTrigger className="w-[140px]">
                             <SelectValue placeholder="Set location" />
                           </SelectTrigger>
                           <SelectContent>
+                            <SelectItem value="none">No Location</SelectItem>
                             {locationOptions.map((location) => (
                               <SelectItem key={location} value={location}>
                                 {location}

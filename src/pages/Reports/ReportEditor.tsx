@@ -167,11 +167,12 @@ const ReportEditor = () => {
                         <TableCell>{code.code}</TableCell>
                         <TableCell>{code.description}</TableCell>
                         <TableCell>
-                          <Select>
+                          <Select defaultValue="none">
                             <SelectTrigger>
                               <SelectValue placeholder="Select" />
                             </SelectTrigger>
                             <SelectContent>
+                              <SelectItem value="none">None</SelectItem>
                               <SelectItem value="LT">LT</SelectItem>
                               <SelectItem value="RT">RT</SelectItem>
                             </SelectContent>

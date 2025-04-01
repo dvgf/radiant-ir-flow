@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import AppLayout from '@/components/Layout/AppLayout';
 import { Button } from '@/components/ui/button';
@@ -51,7 +50,6 @@ const Worklist = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // Filter states
   const [showTodayOnly, setShowTodayOnly] = useState(true);
   const [startDate, setStartDate] = useState<Date | undefined>(new Date());
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
@@ -61,12 +59,10 @@ const Worklist = () => {
   const [uniqueProcedureTypes, setUniqueProcedureTypes] = useState<string[]>([]);
   const [uniqueStatuses, setUniqueStatuses] = useState<string[]>([]);
 
-  // Load procedures
   useEffect(() => {
     loadProcedures();
   }, [showTodayOnly, startDate, endDate, procedureTypeFilter, statusFilter]);
 
-  // Extract unique procedure types and statuses for filters
   useEffect(() => {
     if (procedures.length > 0) {
       const procedureTypes = [...new Set(procedures.map(p => p.procedure_name))];
@@ -77,11 +73,9 @@ const Worklist = () => {
     }
   }, [procedures]);
 
-  // Filter procedures when searchTerm or reportStatusFilter changes
   useEffect(() => {
     let filtered = [...procedures];
 
-    // Apply search term filter
     if (searchTerm.trim() !== '') {
       const lowercasedSearch = searchTerm.toLowerCase();
       filtered = filtered.filter(
@@ -92,7 +86,6 @@ const Worklist = () => {
       );
     }
 
-    // Apply report status filter
     if (reportStatusFilter) {
       filtered = filtered.filter(
         (procedure) => getReportStatus(procedure.id) === reportStatusFilter
@@ -113,7 +106,6 @@ const Worklist = () => {
         status?: string;
       } = {};
       
-      // Apply date filters
       if (showTodayOnly) {
         const today = new Date().toISOString().split('T')[0];
         filters.startDate = today;
@@ -127,12 +119,10 @@ const Worklist = () => {
         }
       }
       
-      // Apply procedure type filter
       if (procedureTypeFilter) {
         filters.procedureType = procedureTypeFilter;
       }
       
-      // Apply status filter
       if (statusFilter) {
         filters.status = statusFilter;
       }
@@ -140,7 +130,6 @@ const Worklist = () => {
       const data = await fetchProcedures(filters);
       setProcedures(data);
 
-      // Initialize tech notes from procedure data
       const notesMap: Record<string, string> = {};
       data.forEach(procedure => {
         notesMap[procedure.id] = procedure.tech_notes || '';
@@ -162,7 +151,6 @@ const Worklist = () => {
     try {
       setRefreshing(true);
       
-      // First try to refresh via Keragon webhook if available
       const webhookUrl = procedures[0]?.webhook_url;
       if (webhookUrl) {
         await triggerKeragonWebhook(webhookUrl);
@@ -172,7 +160,6 @@ const Worklist = () => {
         });
       }
       
-      // Refresh from database
       await loadProcedures();
     } catch (error) {
       console.error('Error refreshing procedures:', error);
@@ -197,7 +184,6 @@ const Worklist = () => {
   const handleTechNotesChange = (id: string, value: string) => {
     setTechNotes(prev => ({ ...prev, [id]: value }));
     
-    // Debounced save to Supabase
     debouncedUpdateNotes(id, value);
   };
 
@@ -218,12 +204,8 @@ const Worklist = () => {
     navigate(`/reports/${procedureId}`);
   };
 
-  // Determine report status based on procedure ID
-  // In a real app, this would fetch status from Supabase
   const getReportStatus = (procedureId: string): ReportStatus => {
-    // Mock implementation - would be replaced with actual data
     const statuses: Record<string, ReportStatus> = {
-      // For demo purposes only
       [procedureId]: 'Not Started',
     };
     
@@ -272,7 +254,6 @@ const Worklist = () => {
         </div>
 
         <div className="flex flex-col gap-4">
-          {/* Filter Section */}
           <div className="bg-ir-muted/40 rounded-lg p-4 border border-ir-border">
             <div className="flex flex-col gap-4">
               <div className="flex justify-between items-center">
@@ -288,7 +269,6 @@ const Worklist = () => {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                {/* Date Range */}
                 {!showTodayOnly && (
                   <>
                     <div>
@@ -310,7 +290,6 @@ const Worklist = () => {
                   </>
                 )}
 
-                {/* Procedure Type Filter */}
                 <div>
                   <Label htmlFor="procedure-type" className="text-xs mb-2 block">Procedure Type</Label>
                   <Select value={procedureTypeFilter} onValueChange={setProcedureTypeFilter}>
@@ -318,7 +297,7 @@ const Worklist = () => {
                       <SelectValue placeholder="All Procedures" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Procedures</SelectItem>
+                      <SelectItem value="all-procedures">All Procedures</SelectItem>
                       {uniqueProcedureTypes.map((type) => (
                         <SelectItem key={type} value={type}>{type}</SelectItem>
                       ))}
@@ -326,7 +305,6 @@ const Worklist = () => {
                   </Select>
                 </div>
 
-                {/* Status Filter */}
                 <div>
                   <Label htmlFor="status" className="text-xs mb-2 block">Status</Label>
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -334,7 +312,7 @@ const Worklist = () => {
                       <SelectValue placeholder="All Statuses" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Statuses</SelectItem>
+                      <SelectItem value="all-statuses">All Statuses</SelectItem>
                       {uniqueStatuses.map((status) => (
                         <SelectItem key={status} value={status}>{status}</SelectItem>
                       ))}
@@ -342,7 +320,6 @@ const Worklist = () => {
                   </Select>
                 </div>
 
-                {/* Report Status Filter */}
                 <div>
                   <Label htmlFor="report-status" className="text-xs mb-2 block">Report Status</Label>
                   <Select value={reportStatusFilter} onValueChange={setReportStatusFilter}>
@@ -350,7 +327,7 @@ const Worklist = () => {
                       <SelectValue placeholder="All Report Statuses" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All Report Statuses</SelectItem>
+                      <SelectItem value="all-report-statuses">All Report Statuses</SelectItem>
                       <SelectItem value="Not Started">Not Started</SelectItem>
                       <SelectItem value="Summary Only">Summary Only</SelectItem>
                       <SelectItem value="Complete">Complete</SelectItem>
@@ -362,7 +339,6 @@ const Worklist = () => {
             </div>
           </div>
 
-          {/* Search Bar */}
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
