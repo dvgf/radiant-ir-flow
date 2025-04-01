@@ -1,25 +1,43 @@
+
 import { useState, useEffect } from 'react';
 import AppLayout from '@/components/Layout/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
-  fetchTodaysProcedures, 
+  fetchProcedures, 
   updateTechNotes, 
   triggerKeragonWebhook 
 } from '@/lib/supabase';
-import { Procedure, ReportStatus } from '@/types';
+import { Procedure, ReportStatus, CaseStatus } from '@/types';
 import { 
   RefreshCw, 
   Search, 
   ChevronDown, 
   ChevronUp, 
   FileText, 
-  Loader2
+  Loader2,
+  Calendar
 } from 'lucide-react';
 import { debounce } from 'lodash';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { 
+  Popover, 
+  PopoverContent, 
+  PopoverTrigger 
+} from '@/components/ui/popover';
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
+import { format } from 'date-fns';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 const Worklist = () => {
   const [procedures, setProcedures] = useState<Procedure[]>([]);
@@ -33,31 +51,93 @@ const Worklist = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  // Filter states
+  const [showTodayOnly, setShowTodayOnly] = useState(true);
+  const [startDate, setStartDate] = useState<Date | undefined>(new Date());
+  const [endDate, setEndDate] = useState<Date | undefined>(new Date());
+  const [procedureTypeFilter, setProcedureTypeFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [reportStatusFilter, setReportStatusFilter] = useState<string>('');
+  const [uniqueProcedureTypes, setUniqueProcedureTypes] = useState<string[]>([]);
+  const [uniqueStatuses, setUniqueStatuses] = useState<string[]>([]);
+
   // Load procedures
   useEffect(() => {
     loadProcedures();
-  }, []);
+  }, [showTodayOnly, startDate, endDate, procedureTypeFilter, statusFilter]);
 
-  // Filter procedures when searchTerm changes
+  // Extract unique procedure types and statuses for filters
   useEffect(() => {
-    if (searchTerm.trim() === '') {
-      setFilteredProcedures(procedures);
-    } else {
+    if (procedures.length > 0) {
+      const procedureTypes = [...new Set(procedures.map(p => p.procedure_name))];
+      setUniqueProcedureTypes(procedureTypes);
+
+      const statuses = [...new Set(procedures.map(p => p.status))];
+      setUniqueStatuses(statuses);
+    }
+  }, [procedures]);
+
+  // Filter procedures when searchTerm or reportStatusFilter changes
+  useEffect(() => {
+    let filtered = [...procedures];
+
+    // Apply search term filter
+    if (searchTerm.trim() !== '') {
       const lowercasedSearch = searchTerm.toLowerCase();
-      const filtered = procedures.filter(
+      filtered = filtered.filter(
         (procedure) =>
           procedure.patient_name.toLowerCase().includes(lowercasedSearch) ||
           procedure.mrn.toLowerCase().includes(lowercasedSearch) ||
           procedure.procedure_name.toLowerCase().includes(lowercasedSearch)
       );
-      setFilteredProcedures(filtered);
     }
-  }, [searchTerm, procedures]);
+
+    // Apply report status filter
+    if (reportStatusFilter) {
+      filtered = filtered.filter(
+        (procedure) => getReportStatus(procedure.id) === reportStatusFilter
+      );
+    }
+
+    setFilteredProcedures(filtered);
+  }, [searchTerm, procedures, reportStatusFilter]);
 
   const loadProcedures = async () => {
     try {
       setLoading(true);
-      const data = await fetchTodaysProcedures();
+      
+      const filters: {
+        startDate?: string;
+        endDate?: string;
+        procedureType?: string;
+        status?: string;
+      } = {};
+      
+      // Apply date filters
+      if (showTodayOnly) {
+        const today = new Date().toISOString().split('T')[0];
+        filters.startDate = today;
+        filters.endDate = today;
+      } else {
+        if (startDate) {
+          filters.startDate = startDate.toISOString().split('T')[0];
+        }
+        if (endDate) {
+          filters.endDate = endDate.toISOString().split('T')[0];
+        }
+      }
+      
+      // Apply procedure type filter
+      if (procedureTypeFilter) {
+        filters.procedureType = procedureTypeFilter;
+      }
+      
+      // Apply status filter
+      if (statusFilter) {
+        filters.status = statusFilter;
+      }
+      
+      const data = await fetchProcedures(filters);
       setProcedures(data);
 
       // Initialize tech notes from procedure data
@@ -176,7 +256,7 @@ const Worklist = () => {
     <AppLayout>
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold tracking-tight">Today's Worklist</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Procedure Worklist</h1>
           <Button 
             onClick={handleRefresh} 
             disabled={refreshing}
@@ -191,7 +271,98 @@ const Worklist = () => {
           </Button>
         </div>
 
-        <div className="flex items-center mb-4">
+        <div className="flex flex-col gap-4">
+          {/* Filter Section */}
+          <div className="bg-ir-muted/40 rounded-lg p-4 border border-ir-border">
+            <div className="flex flex-col gap-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-sm font-medium">Filter Options</h3>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="today-switch" className="text-sm">Today Only</Label>
+                  <Switch 
+                    id="today-switch" 
+                    checked={showTodayOnly} 
+                    onCheckedChange={setShowTodayOnly}
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                {/* Date Range */}
+                {!showTodayOnly && (
+                  <>
+                    <div>
+                      <Label htmlFor="start-date" className="text-xs mb-2 block">Start Date</Label>
+                      <DatePicker
+                        id="start-date"
+                        date={startDate}
+                        setDate={setStartDate}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="end-date" className="text-xs mb-2 block">End Date</Label>
+                      <DatePicker
+                        id="end-date"
+                        date={endDate}
+                        setDate={setEndDate}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Procedure Type Filter */}
+                <div>
+                  <Label htmlFor="procedure-type" className="text-xs mb-2 block">Procedure Type</Label>
+                  <Select value={procedureTypeFilter} onValueChange={setProcedureTypeFilter}>
+                    <SelectTrigger id="procedure-type">
+                      <SelectValue placeholder="All Procedures" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Procedures</SelectItem>
+                      {uniqueProcedureTypes.map((type) => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Status Filter */}
+                <div>
+                  <Label htmlFor="status" className="text-xs mb-2 block">Status</Label>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger id="status">
+                      <SelectValue placeholder="All Statuses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Statuses</SelectItem>
+                      {uniqueStatuses.map((status) => (
+                        <SelectItem key={status} value={status}>{status}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Report Status Filter */}
+                <div>
+                  <Label htmlFor="report-status" className="text-xs mb-2 block">Report Status</Label>
+                  <Select value={reportStatusFilter} onValueChange={setReportStatusFilter}>
+                    <SelectTrigger id="report-status">
+                      <SelectValue placeholder="All Report Statuses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">All Report Statuses</SelectItem>
+                      <SelectItem value="Not Started">Not Started</SelectItem>
+                      <SelectItem value="Summary Only">Summary Only</SelectItem>
+                      <SelectItem value="Complete">Complete</SelectItem>
+                      <SelectItem value="Submitted">Submitted</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Search Bar */}
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -215,6 +386,7 @@ const Worklist = () => {
                   <th className="w-8"></th>
                   <th>Patient Name</th>
                   <th>MRN</th>
+                  <th>Date</th>
                   <th>Procedure</th>
                   <th>Laterality</th>
                   <th>Status</th>
@@ -227,6 +399,8 @@ const Worklist = () => {
                   filteredProcedures.map((procedure) => {
                     const isExpanded = expandedRows.includes(procedure.id);
                     const reportStatus = getReportStatus(procedure.id);
+                    const formattedDate = procedure.date ? 
+                      new Date(procedure.date).toLocaleDateString() : 'N/A';
                     
                     return (
                       <>
@@ -247,6 +421,7 @@ const Worklist = () => {
                           </td>
                           <td>{procedure.patient_name}</td>
                           <td>{procedure.mrn}</td>
+                          <td>{formattedDate}</td>
                           <td>{procedure.procedure_name}</td>
                           <td>{procedure.laterality}</td>
                           <td>
@@ -271,7 +446,7 @@ const Worklist = () => {
                         </tr>
                         {isExpanded && (
                           <tr>
-                            <td colSpan={8} className="bg-ir-muted/30 p-0">
+                            <td colSpan={9} className="bg-ir-muted/30 p-0">
                               <div className="p-4 space-y-3">
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                   <div>
@@ -315,7 +490,7 @@ const Worklist = () => {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={8} className="text-center py-8">
+                    <td colSpan={9} className="text-center py-8">
                       No procedures found
                     </td>
                   </tr>

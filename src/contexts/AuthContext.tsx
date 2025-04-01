@@ -29,29 +29,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
-          // Check for admin role in metadata or profiles table
+          // Check for admin role in metadata 
           let role: UserRole = 'doctor'; // Default role
           
-          // First check in user metadata
+          // Check in user metadata
           const metaRole = session.user.user_metadata?.role;
           if (metaRole === 'admin') {
             role = 'admin';
-          } else {
-            // If not in metadata, check profiles table if it exists
-            try {
-              const { data: profileData } = await supabase
-                .from('profiles')
-                .select('role')
-                .eq('id', session.user.id)
-                .single();
-                
-              if (profileData?.role === 'admin') {
-                role = 'admin';
-              }
-            } catch (err) {
-              // Profiles table might not exist, continue with default role
-              console.log('No profile found, using default role');
-            }
           }
           
           setUser({
@@ -79,29 +63,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        // Check for admin role in metadata or profiles table
+        // Check for admin role in metadata
         let role: UserRole = 'doctor'; // Default role
         
-        // First check in user metadata
+        // Check in user metadata
         const metaRole = session.user.user_metadata?.role;
         if (metaRole === 'admin') {
           role = 'admin';
-        } else {
-          // If not in metadata, check profiles table if it exists
-          try {
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('role')
-              .eq('id', session.user.id)
-              .single();
-              
-            if (profileData?.role === 'admin') {
-              role = 'admin';
-            }
-          } catch (err) {
-            // Profiles table might not exist, continue with default role
-            console.log('No profile found, using default role');
-          }
         }
         
         setUser({

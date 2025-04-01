@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../types/supabase';
 import { CaseSummary, CaseReport, CaseBilling, Procedure, Template, BillingCode, Provider } from '../types';
@@ -10,15 +9,40 @@ import { supabase as supabaseClient } from '../integrations/supabase/client';
 // Export the client that's already properly configured
 export const supabase = supabaseClient;
 
-export async function fetchTodaysProcedures() {
-  const today = new Date().toISOString().split('T')[0];
+export async function fetchProcedures(filters: {
+  startDate?: string;
+  endDate?: string;
+  procedureType?: string;
+  status?: string;
+  reportStatus?: string;
+} = {}) {
+  const { startDate, endDate, procedureType, status } = filters;
   
-  const { data, error } = await supabase
+  let query = supabase
     .from('procedures')
     .select('*')
-    .gte('date', `${today}`)
-    .lte('date', `${today}`)
-    .order('date', { ascending: true });
+    .order('date', { ascending: false });
+  
+  // Apply date filters if provided
+  if (startDate) {
+    query = query.gte('date', startDate);
+  }
+  
+  if (endDate) {
+    query = query.lte('date', endDate);
+  }
+  
+  // Apply procedure type filter if provided
+  if (procedureType) {
+    query = query.ilike('procedure_name', `%${procedureType}%`);
+  }
+  
+  // Apply status filter if provided
+  if (status) {
+    query = query.eq('status', status);
+  }
+  
+  const { data, error } = await query;
     
   if (error) {
     console.error('Error fetching procedures:', error);
@@ -49,6 +73,11 @@ export async function fetchTodaysProcedures() {
     updated_at: p.updated_at,
     date: p.date
   }));
+}
+
+export async function fetchTodaysProcedures() {
+  const today = new Date().toISOString().split('T')[0];
+  return fetchProcedures({ startDate: today, endDate: today });
 }
 
 export async function fetchProcedure(id: string): Promise<Procedure> {
