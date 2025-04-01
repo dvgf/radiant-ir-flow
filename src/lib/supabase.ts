@@ -1,7 +1,6 @@
-
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../types/supabase';
-import { CaseSummary, CaseReport, CaseBilling, Procedure } from '../types';
+import { CaseSummary, CaseReport, CaseBilling, Procedure, Template, BillingCode } from '../types';
 
 // Use the values from the Supabase integration client
 import { supabase as supabaseClient } from '../integrations/supabase/client';
@@ -89,9 +88,10 @@ export async function updateTechNotes(id: string, tech_notes: string) {
 export async function saveCaseSummary(summary: Partial<CaseSummary>) {
   // Convert to DB schema field names
   const formattedSummary = {
-    procedure_id: summary.procedure_id,
+    case_id: summary.procedure_id, // Use case_id for backwards compatibility with DB
     summary_text: summary.summary_text,
     created_by: summary.created_by,
+    mrn: summary.mrn
   };
 
   const { data, error } = await supabase
@@ -110,11 +110,15 @@ export async function saveCaseSummary(summary: Partial<CaseSummary>) {
 export async function saveCaseReport(report: Partial<CaseReport>) {
   // Convert to DB schema field names
   const formattedReport = {
-    procedure_id: report.procedure_id,
+    case_id: report.procedure_id, // Use case_id for backwards compatibility with DB
     report_text: report.report_text,
-    pdf_url: report.pdf_url,
     created_by: report.created_by,
   };
+
+  if (report.pdf_url) {
+    // @ts-ignore - pdf_url exists in the database but not in the types file
+    formattedReport.pdf_url = report.pdf_url;
+  }
 
   const { data, error } = await supabase
     .from('case_reports')
@@ -130,11 +134,17 @@ export async function saveCaseReport(report: Partial<CaseReport>) {
 }
 
 export async function saveCaseBilling(billing: Partial<CaseBilling>) {
+  // Format billing codes to strings for the database
+  const formattedBillingCodes = billing.billing_codes?.map(code => {
+    if (typeof code === 'string') return code;
+    return code.modifier ? `${code.code}:${code.modifier}` : code.code;
+  });
+  
   // Convert to DB schema field names
   const formattedBilling = {
-    procedure_id: billing.procedure_id,
     mrn: billing.mrn, // Keep for backward compatibility
-    billing_codes: billing.billing_codes,
+    case_id: billing.procedure_id, // Use case_id for backward compatibility with DB
+    billing_codes: formattedBillingCodes,
     diagnosis_codes: billing.diagnosis_codes,
     operators: billing.operators,
     provider_id: billing.provider_id,
@@ -179,13 +189,25 @@ export async function fetchProviders() {
 }
 
 export async function fetchBillingCodes(category: 'CPT' | 'ICD10') {
-  // Use the actual table for billing codes
-  const { data, error } = await supabase
-    .from('billing_codes')
-    .select('*')
-    .eq('category', category);
+  try {
+    // Use the actual table for billing codes
+    const { data, error } = await supabase
+      .from('billing_codes')
+      .select('*')
+      .eq('category', category);
+      
+    if (error || !data) {
+      throw error;
+    }
     
-  if (error || !data) {
+    // Ensure category is correctly typed
+    return data.map(code => ({
+      id: code.id,
+      code: code.code,
+      description: code.description,
+      category: code.category as 'CPT' | 'ICD10'
+    }));
+  } catch (error) {
     console.error('Error fetching billing codes:', error);
     // Fallback to mock data if table doesn't exist or query fails
     const mockCodes = category === 'CPT' 
@@ -202,12 +224,35 @@ export async function fetchBillingCodes(category: 'CPT' | 'ICD10') {
     
     return mockCodes;
   }
-  
-  // Ensure category is correctly typed
-  return data.map(code => ({
-    ...code,
-    category: code.category === 'CPT' ? 'CPT' as const : 'ICD10' as const
-  }));
+}
+
+export async function fetchTemplates() {
+  try {
+    const { data, error } = await supabase
+      .from('templates')
+      .select('*')
+      .order('name', { ascending: true });
+      
+    if (error) {
+      throw error;
+    }
+    
+    // Map to the Template interface
+    return data.map((template: any) => ({
+      id: template.id,
+      name: template.name,
+      description: template.description || '',
+      category: template.category,
+      sections: template.sections,
+      variables: template.variables,
+      author: template.author || 'Unknown',
+      created_at: template.created_at,
+      updated_at: template.updated_at
+    }));
+  } catch (error) {
+    console.error('Error fetching templates:', error);
+    return [];
+  }
 }
 
 export async function triggerKeragonWebhook(webhookUrl: string) {

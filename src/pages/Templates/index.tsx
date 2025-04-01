@@ -36,7 +36,25 @@ const Templates = () => {
     const loadTemplates = async () => {
       try {
         const data = await fetchTemplates();
-        setTemplates(data);
+        
+        // Convert the data to match the Template interface
+        const formattedTemplates = data.map(template => ({
+          id: template.id,
+          name: template.name,
+          description: template.description || '',
+          category: template.category,
+          sections: typeof template.sections === 'string' 
+            ? JSON.parse(template.sections) 
+            : template.sections,
+          variables: typeof template.variables === 'string' 
+            ? JSON.parse(template.variables) 
+            : template.variables,
+          author: template.author || 'Unknown',
+          created_at: template.created_at,
+          updated_at: template.updated_at
+        }));
+        
+        setTemplates(formattedTemplates);
       } catch (error) {
         console.error('Error loading templates:', error);
         toast({
