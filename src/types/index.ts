@@ -1,3 +1,4 @@
+
 export type UserRole = 'technologist' | 'doctor' | 'admin';
 
 export interface User {
@@ -36,6 +37,7 @@ export interface Template {
   author: string;
   created_at: string;
   updated_at: string;
+  content?: string; // Added this optional property
 }
 
 export interface TemplateCodeAssociation {

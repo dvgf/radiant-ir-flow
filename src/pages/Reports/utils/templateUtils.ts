@@ -63,7 +63,7 @@ export const generateTemplateText = (
         templateText += `### ${section.title}\n${sectionContent}\n\n`;
       }
     });
-  } else if (typeof template.content === 'string') {
+  } else if (template.content && typeof template.content === 'string') {
     // For templates with just a content field instead of sections
     let content = template.content;
     
