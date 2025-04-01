@@ -103,9 +103,9 @@ const ReportEditorContent = () => {
         />
       </div>
 
-      <ReportTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <ReportTabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      <Tabs value={activeTab}>
         <TabsContent value="details">
           <DetailsTabContent setActiveTab={setActiveTab} />
         </TabsContent>
