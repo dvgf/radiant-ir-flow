@@ -1,5 +1,6 @@
 
-import { Json } from '../types/supabase';
+// Import Json from the integrations/supabase/types file to avoid circular imports
+import { Json } from '../integrations/supabase/types';
 
 export type Database = {
   public: {
@@ -78,7 +79,7 @@ export type Database = {
       case_summaries: {
         Row: {
           id: string
-          procedure_id: string // Changed from case_id
+          case_id: string // Changed to case_id to match DB
           mrn: string | null
           summary_text: string
           created_at: string
@@ -87,7 +88,7 @@ export type Database = {
         }
         Insert: {
           id?: string
-          procedure_id: string // Changed from case_id
+          case_id: string // Changed to case_id to match DB
           mrn?: string | null
           summary_text: string
           created_at?: string
@@ -96,7 +97,7 @@ export type Database = {
         }
         Update: {
           id?: string
-          procedure_id?: string // Changed from case_id
+          case_id?: string // Changed to case_id to match DB
           mrn?: string | null
           summary_text?: string
           created_at?: string
@@ -107,7 +108,7 @@ export type Database = {
       case_reports: {
         Row: {
           id: string
-          procedure_id: string // Changed from case_id
+          case_id: string // Changed to case_id to match DB
           report_text: string
           pdf_url: string | null
           created_at: string
@@ -116,7 +117,7 @@ export type Database = {
         }
         Insert: {
           id?: string
-          procedure_id: string // Changed from case_id
+          case_id: string // Changed to case_id to match DB
           report_text: string
           pdf_url?: string | null
           created_at?: string
@@ -125,7 +126,7 @@ export type Database = {
         }
         Update: {
           id?: string
-          procedure_id?: string // Changed from case_id
+          case_id?: string // Changed to case_id to match DB
           report_text?: string
           pdf_url?: string | null
           created_at?: string
@@ -136,7 +137,7 @@ export type Database = {
       case_billing: {
         Row: {
           id: string
-          procedure_id: string
+          procedure_id: string // New field name
           mrn: string | null
           billing_codes: Json
           diagnosis_codes: string[]
@@ -149,7 +150,7 @@ export type Database = {
         }
         Insert: {
           id?: string
-          procedure_id: string
+          procedure_id: string // New field name
           mrn?: string | null
           billing_codes: Json
           diagnosis_codes: string[]
@@ -162,7 +163,7 @@ export type Database = {
         }
         Update: {
           id?: string
-          procedure_id?: string
+          procedure_id?: string // New field name
           mrn?: string | null
           billing_codes?: Json
           diagnosis_codes?: string[]

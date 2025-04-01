@@ -1,6 +1,8 @@
+
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../types/supabase';
 import { CaseSummary, CaseReport, CaseBilling, Procedure, Template, BillingCode } from '../types';
+import { Json } from '../integrations/supabase/types';
 
 // Use the values from the Supabase integration client
 import { supabase as supabaseClient } from '../integrations/supabase/client';
@@ -37,7 +39,7 @@ export async function fetchTodaysProcedures() {
     auth_number: p.auth_number || p.AUTH,
     insurance_company: p.insurance_company || p.COMP,
     line1_full: p.line1_full,
-    tech_notes: p.tech_notes,
+    tech_notes: p.tech_notes || '',
     webhook_url: p.webhook_url,
     // Include original DB fields for compatibility
     DOB: p.DOB,
@@ -47,6 +49,44 @@ export async function fetchTodaysProcedures() {
     updated_at: p.updated_at,
     date: p.date
   }));
+}
+
+export async function fetchProcedure(id: string): Promise<Procedure> {
+  const { data, error } = await supabase
+    .from('procedures')
+    .select('*')
+    .eq('id', id)
+    .single();
+    
+  if (error) {
+    console.error('Error fetching procedure:', error);
+    throw error;
+  }
+  
+  // Map the DB result to the Procedure interface
+  return {
+    id: data.id,
+    patient_name: data.patient_name,
+    mrn: data.mrn,
+    procedure_name: data.procedure_name,
+    laterality: data.laterality || '',
+    status: (data.status || 'Scheduled') as Procedure['status'],
+    appointment_time: data.appointment_time || data.date, // Support both column names
+    dob: data.dob || data.DOB,
+    location: data.location || 'Unassigned',
+    auth_number: data.auth_number || data.AUTH,
+    insurance_company: data.insurance_company || data.COMP,
+    line1_full: data.line1_full || '',
+    tech_notes: data.tech_notes || '',
+    webhook_url: data.webhook_url,
+    // Include original DB fields for compatibility
+    DOB: data.DOB,
+    AUTH: data.AUTH,
+    COMP: data.COMP,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+    date: data.date
+  };
 }
 
 export async function updateProcedureStatus(id: string, status: string) {
@@ -83,6 +123,100 @@ export async function updateTechNotes(id: string, tech_notes: string) {
     console.error('Error updating tech notes:', error);
     throw error;
   }
+}
+
+export async function fetchCaseSummary(procedureId: string): Promise<CaseSummary | null> {
+  const { data, error } = await supabase
+    .from('case_summaries')
+    .select('*')
+    .eq('case_id', procedureId)
+    .maybeSingle();
+    
+  if (error) {
+    console.error('Error fetching case summary:', error);
+    throw error;
+  }
+  
+  if (!data) return null;
+  
+  // Map to the CaseSummary interface
+  return {
+    id: data.id,
+    procedure_id: data.case_id,
+    summary_text: data.summary_text,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+    created_by: data.created_by || '',
+    mrn: data.mrn
+  };
+}
+
+export async function fetchCaseReport(procedureId: string): Promise<CaseReport | null> {
+  const { data, error } = await supabase
+    .from('case_reports')
+    .select('*')
+    .eq('case_id', procedureId)
+    .maybeSingle();
+    
+  if (error) {
+    console.error('Error fetching case report:', error);
+    throw error;
+  }
+  
+  if (!data) return null;
+  
+  // Map to the CaseReport interface
+  return {
+    id: data.id,
+    procedure_id: data.case_id,
+    report_text: data.report_text,
+    pdf_url: data.pdf_url || undefined,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+    created_by: data.created_by || ''
+  };
+}
+
+export async function fetchCaseBilling(procedureId: string): Promise<CaseBilling | null> {
+  const { data, error } = await supabase
+    .from('case_billing')
+    .select('*')
+    .eq('procedure_id', procedureId)
+    .maybeSingle();
+    
+  if (error) {
+    console.error('Error fetching case billing:', error);
+    throw error;
+  }
+  
+  if (!data) return null;
+  
+  // Format billing codes from DB
+  const billingCodes = Array.isArray(data.billing_codes) 
+    ? data.billing_codes.map((code: string) => {
+        const [codeValue, modifier] = code.split(':');
+        return { 
+          code: codeValue,
+          modifier: modifier as 'LT' | 'RT' | undefined
+        };
+      })
+    : [];
+  
+  // Map to the CaseBilling interface
+  return {
+    id: data.id,
+    procedure_id: data.procedure_id || data.case_id,
+    billing_codes: billingCodes,
+    diagnosis_codes: data.diagnosis_codes || [],
+    operators: typeof data.operators === 'string' 
+      ? JSON.parse(data.operators)
+      : (data.operators as Record<string, string>),
+    provider_id: data.provider_id || '',
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+    created_by: data.created_by || '',
+    mrn: data.mrn
+  };
 }
 
 export async function saveCaseSummary(summary: Partial<CaseSummary>) {
@@ -143,7 +277,7 @@ export async function saveCaseBilling(billing: Partial<CaseBilling>) {
   // Convert to DB schema field names
   const formattedBilling = {
     mrn: billing.mrn, // Keep for backward compatibility
-    case_id: billing.procedure_id, // Use case_id for backward compatibility with DB
+    procedure_id: billing.procedure_id, // New field name
     billing_codes: formattedBillingCodes,
     diagnosis_codes: billing.diagnosis_codes,
     operators: billing.operators,
@@ -201,7 +335,7 @@ export async function fetchBillingCodes(category: 'CPT' | 'ICD10') {
     }
     
     // Ensure category is correctly typed
-    return data.map(code => ({
+    return data.map((code: any) => ({
       id: code.id,
       code: code.code,
       description: code.description,

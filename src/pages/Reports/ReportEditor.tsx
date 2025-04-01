@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import AppLayout from '@/components/Layout/AppLayout';
@@ -53,84 +54,24 @@ const ReportEditor = () => {
         const reportData = await fetchCaseReport(procedureId);
         const billingData = await fetchCaseBilling(procedureId);
         const providersData = await fetchProviders();
-        const billingCodesData = await fetchBillingCodes('CPT');
+        const cptCodesData = await fetchBillingCodes('CPT');
         const icd10CodesData = await fetchBillingCodes('ICD10');
 
-        setProcedure({
-          id: procedureData.id,
-          patient_name: procedureData.patient_name,
-          mrn: procedureData.mrn,
-          procedure_name: procedureData.procedure_name,
-          laterality: procedureData.laterality || '',
-          status: (procedureData.status || 'Scheduled') as CaseStatus,
-          appointment_time: procedureData.appointment_time || procedureData.date,
-          dob: procedureData.dob || procedureData.DOB,
-          location: procedureData.location || 'Unassigned',
-          auth_number: procedureData.auth_number || procedureData.AUTH,
-          insurance_company: procedureData.insurance_company || procedureData.COMP,
-          line1_full: procedureData.line1_full || '',
-          tech_notes: procedureData.tech_notes || '',
-          webhook_url: procedureData.webhook_url,
-          DOB: procedureData.DOB,
-          AUTH: procedureData.AUTH,
-          COMP: procedureData.COMP,
-          created_at: procedureData.created_at,
-          updated_at: procedureData.updated_at,
-          date: procedureData.date
-        });
-
+        setProcedure(procedureData);
         setSummary(summaryData);
         setReport(reportData);
+        setBilling(billingData);
         setProviders(providersData);
-
-        if (billingCodesData) {
-          const cptCodes = billingCodesData
-            .filter(code => code.category === 'CPT')
-            .map(code => ({
-              id: code.id, 
-              code: code.code, 
-              description: code.description, 
-              category: 'CPT' as const
-            }));
-          
-          const icd10Codes = billingCodesData
-            .filter(code => code.category === 'ICD10')
-            .map(code => ({
-              id: code.id, 
-              code: code.code, 
-              description: code.description, 
-              category: 'ICD10' as const
-            }));
-
-          setCptCodes(cptCodes);
-          setIcd10Codes(icd10Codes);
-        }
+        setCptCodes(cptCodesData);
+        setIcd10Codes(icd10CodesData);
 
         if (billingData) {
           setSelectedProviderId(billingData.provider_id || '');
-          
-          const billingCodes = Array.isArray(billingData.billing_codes) 
-            ? billingData.billing_codes.map(code => {
-                if (typeof code === 'string') {
-                  const [codeValue, modifier] = code.split(':');
-                  return { 
-                    code: codeValue,
-                    modifier: modifier as 'LT' | 'RT' | undefined
-                  };
-                }
-                return code;
-              })
-            : [];
-          
-          setSelectedCptCodes(billingCodes);
+          setSelectedCptCodes(billingData.billing_codes || []);
           setSelectedIcd10Codes(billingData.diagnosis_codes || []);
           
           if (billingData.operators) {
-            const operatorsObj = typeof billingData.operators === 'string'
-              ? JSON.parse(billingData.operators)
-              : billingData.operators;
-            
-            setOperators(operatorsObj as Record<string, string>);
+            setOperators(billingData.operators);
           }
         }
 
@@ -145,7 +86,7 @@ const ReportEditor = () => {
     };
 
     fetchData();
-  }, [procedureId]);
+  }, [procedureId, toast]);
 
   if (!procedure) {
     return (
@@ -203,7 +144,7 @@ const ReportEditor = () => {
                   <SelectContent>
                     {providers.map((provider) => (
                       <SelectItem key={provider.id} value={provider.id}>
-                        {provider.provider_name || provider.name}
+                        {provider.provider_name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -270,7 +211,7 @@ const ReportEditor = () => {
             <CardTitle>Report</CardTitle>
           </CardHeader>
           <CardContent>
-            <Textarea placeholder="Enter report text here." />
+            <Textarea placeholder="Enter report text here." value={report?.report_text || ''} />
           </CardContent>
         </Card>
       </div>
