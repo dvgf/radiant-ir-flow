@@ -113,7 +113,7 @@ const ProcedureList = ({
                     </td>
                     <td>{renderReportStatusPill(reportStatus)}</td>
                     <td className="text-right">
-                      {userRole === 'doctor' && (
+                      {(userRole === 'doctor' || userRole === 'admin') && (
                         <Button
                           variant="outline"
                           size="sm"
