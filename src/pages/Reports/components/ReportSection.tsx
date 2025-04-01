@@ -125,14 +125,26 @@ const ReportSection: React.FC<ReportSectionProps> = ({
           // Replace variables in the content
           Object.entries(variables).forEach(([name, value]) => {
             const variablePattern = new RegExp(`\\{\\{${name}\\}\\}`, 'g');
-            sectionContent = sectionContent.replace(variablePattern, value);
+            sectionContent = sectionContent.replace(variablePattern, value || `{{${name}}}`);
           });
           
           templateText += `### ${section.title}\n${sectionContent}\n\n`;
         }
       });
+    } else if (typeof selectedTemplate.content === 'string') {
+      // For templates with just a content field instead of sections
+      let content = selectedTemplate.content;
+      
+      // Replace variables in the content
+      Object.entries(variables).forEach(([name, value]) => {
+        const variablePattern = new RegExp(`\\{\\{${name}\\}\\}`, 'g');
+        content = content.replace(variablePattern, value || `{{${name}}}`);
+      });
+      
+      templateText += content;
     }
     
+    // Set the report text with the template
     setReport(prev => {
       if (!prev) return null;
       return {
