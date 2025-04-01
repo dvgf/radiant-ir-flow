@@ -28,6 +28,11 @@ export interface Procedure {
   line1_full?: string;
   tech_notes?: string;
   webhook_url?: string;
+  DOB?: string;
+  AUTH?: string;
+  COMP?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CaseSummary {
@@ -50,7 +55,7 @@ export interface CaseReport {
 }
 
 export interface BillingCode {
-  id: string; // Adding the missing id property
+  id: string;
   code: string;
   description: string;
   category: 'CPT' | 'ICD10';
@@ -66,11 +71,14 @@ export interface CaseBilling {
   created_at: string;
   updated_at: string;
   created_by: string;
+  mrn?: string;
 }
 
 export interface Provider {
   id: string;
-  name: string;
+  provider_name: string;
+  provider_id?: number;
+  initials?: string;
   npi: string;
   specialty: string;
   active: boolean;

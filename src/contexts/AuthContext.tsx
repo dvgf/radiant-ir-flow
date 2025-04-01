@@ -29,20 +29,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
-          // Fetch the user's role and profile from a custom table (if you have one)
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-            
+          // For now, we'll just set a default user role
+          // Later this should be fetched from a profiles table
           setUser({
             id: session.user.id,
             email: session.user.email || '',
-            role: (profile?.role || 'technologist') as UserRole,
-            firstName: profile?.first_name,
-            lastName: profile?.last_name,
-            avatarUrl: profile?.avatar_url,
+            role: 'doctor', // Default role for testing
+            firstName: 'Test',
+            lastName: 'User',
           });
         }
       } catch (error) {
@@ -62,20 +56,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        // Fetch profile data when auth state changes
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-          
+        // For now, we'll just set a default user role
+        // Later this should be fetched from a profiles table
         setUser({
           id: session.user.id,
           email: session.user.email || '',
-          role: (profile?.role || 'technologist') as UserRole,
-          firstName: profile?.first_name,
-          lastName: profile?.last_name,
-          avatarUrl: profile?.avatar_url,
+          role: 'doctor', // Default role for testing
+          firstName: 'Test',
+          lastName: 'User',
         });
       } else {
         setUser(null);

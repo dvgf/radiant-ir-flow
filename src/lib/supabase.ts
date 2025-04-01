@@ -1,3 +1,4 @@
+
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '../types/supabase';
 import { CaseSummary, CaseReport, CaseBilling } from '../types';
@@ -63,9 +64,15 @@ export async function updateTechNotes(id: string, tech_notes: string) {
 }
 
 export async function saveCaseSummary(summary: Partial<CaseSummary>) {
+  const formattedSummary = {
+    procedure_id: summary.procedure_id,
+    summary_text: summary.summary_text,
+    created_by: summary.created_by,
+  };
+
   const { data, error } = await supabase
     .from('case_summaries')
-    .upsert(summary)
+    .upsert(formattedSummary)
     .select();
     
   if (error) {
@@ -77,9 +84,16 @@ export async function saveCaseSummary(summary: Partial<CaseSummary>) {
 }
 
 export async function saveCaseReport(report: Partial<CaseReport>) {
+  const formattedReport = {
+    procedure_id: report.procedure_id,
+    report_text: report.report_text,
+    pdf_url: report.pdf_url,
+    created_by: report.created_by,
+  };
+
   const { data, error } = await supabase
     .from('case_reports')
-    .upsert(report)
+    .upsert(formattedReport)
     .select();
     
   if (error) {
@@ -91,9 +105,18 @@ export async function saveCaseReport(report: Partial<CaseReport>) {
 }
 
 export async function saveCaseBilling(billing: Partial<CaseBilling>) {
+  const formattedBilling = {
+    procedure_id: billing.procedure_id,
+    billing_codes: billing.billing_codes,
+    diagnosis_codes: billing.diagnosis_codes,
+    operators: billing.operators,
+    provider_id: billing.provider_id,
+    created_by: billing.created_by,
+  };
+
   const { data, error } = await supabase
     .from('case_billing')
-    .upsert(billing)
+    .upsert(formattedBilling)
     .select();
     
   if (error) {
@@ -108,8 +131,7 @@ export async function fetchProviders() {
   const { data, error } = await supabase
     .from('providers')
     .select('*')
-    .eq('active', true)
-    .order('name');
+    .eq('active', true);
     
   if (error) {
     console.error('Error fetching providers:', error);
@@ -120,18 +142,21 @@ export async function fetchProviders() {
 }
 
 export async function fetchBillingCodes(category: 'CPT' | 'ICD10') {
-  const { data, error } = await supabase
-    .from('billing_codes')
-    .select('*')
-    .eq('category', category)
-    .order('code');
-    
-  if (error) {
-    console.error('Error fetching billing codes:', error);
-    throw error;
-  }
+  // Since we don't have a billing_codes table yet, we'll mock this data
+  // Later this should be replaced with an actual query
+  const mockCodes = category === 'CPT' 
+    ? [
+        { id: '1', code: '36901', description: 'Diagnostic angiography', category: 'CPT' },
+        { id: '2', code: '36902', description: 'Thrombectomy', category: 'CPT' },
+        { id: '3', code: '36903', description: 'Stent placement', category: 'CPT' }
+      ]
+    : [
+        { id: '4', code: 'N18.6', description: 'End stage renal disease', category: 'ICD10' },
+        { id: '5', code: 'I82.4', description: 'Venous thrombosis', category: 'ICD10' },
+        { id: '6', code: 'Z99.2', description: 'Dependence on renal dialysis', category: 'ICD10' }
+      ];
   
-  return data;
+  return mockCodes;
 }
 
 export async function fetchTemplates() {
@@ -145,7 +170,16 @@ export async function fetchTemplates() {
     throw error;
   }
   
-  return data;
+  // Convert jsonb to proper Record objects
+  return data.map(template => ({
+    ...template,
+    sections: typeof template.sections === 'string' 
+      ? JSON.parse(template.sections) 
+      : template.sections,
+    variables: typeof template.variables === 'string' 
+      ? JSON.parse(template.variables) 
+      : template.variables,
+  }));
 }
 
 export async function triggerKeragonWebhook(webhookUrl: string) {

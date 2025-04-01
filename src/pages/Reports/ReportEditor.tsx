@@ -55,15 +55,46 @@ const ReportEditor = () => {
           .single();
 
         if (procedureError) throw procedureError;
-        setProcedure(procedureData);
+        
+        // Map to our Procedure type
+        const mappedProcedure: Procedure = {
+          id: procedureData.id,
+          patient_name: procedureData.patient_name,
+          mrn: procedureData.mrn,
+          procedure_name: procedureData.procedure_name,
+          laterality: procedureData.laterality || '',
+          status: procedureData.status || 'Scheduled',
+          appointment_time: procedureData.appointment_time,
+          dob: procedureData.DOB,
+          location: procedureData.location,
+          auth_number: procedureData.AUTH,
+          insurance_company: procedureData.COMP,
+          line1_full: procedureData.line1_full,
+          tech_notes: procedureData.tech_notes,
+          webhook_url: procedureData.webhook_url,
+        };
+        
+        setProcedure(mappedProcedure);
 
         // Fetch providers
         const providersData = await fetchProviders();
-        setProviders(providersData);
+        
+        // Map provider data to our Provider type
+        const mappedProviders: Provider[] = providersData.map((p: any) => ({
+          id: p.id || p.provider_id.toString(),
+          provider_name: p.provider_name,
+          provider_id: p.provider_id,
+          initials: p.initials,
+          npi: p.npi || p.provider_id.toString(),
+          specialty: p.specialty || 'Unknown',
+          active: p.active !== false, // default to true if not specified
+        }));
+        
+        setProviders(mappedProviders);
         
         // Default to first provider if available
-        if (providersData.length > 0) {
-          setSelectedProvider(providersData[0].id);
+        if (mappedProviders.length > 0) {
+          setSelectedProvider(mappedProviders[0].id);
         }
 
         // Fetch CPT and ICD10 codes
@@ -104,10 +135,12 @@ const ReportEditor = () => {
           .maybeSingle();
 
         if (!billingError && billingData) {
-          setSelectedProvider(billingData.provider_id);
-          setSelectedCptCodes(billingData.billing_codes as any);
-          setSelectedIcd10Codes(billingData.diagnosis_codes);
-          setOperators(billingData.operators as Record<string, string>);
+          // Use provider_id or default to first provider
+          const providerId = billingData.provider_id || (mappedProviders.length > 0 ? mappedProviders[0].id : '');
+          setSelectedProvider(providerId);
+          setSelectedCptCodes(billingData.billing_codes || []);
+          setSelectedIcd10Codes(billingData.diagnosis_codes || []);
+          setOperators(billingData.operators || {});
         }
       } catch (error) {
         console.error('Error fetching report data:', error);
@@ -252,10 +285,12 @@ const ReportEditor = () => {
       const pdfUrl = await uploadReportPdf(procedure.mrn, procedureId, mockPdfBlob);
       
       // 5. Update the report with the PDF URL
-      await supabase
-        .from('case_reports')
-        .update({ pdf_url: pdfUrl })
-        .eq('id', savedReport.id);
+      await saveCaseReport({
+        procedure_id: procedureId,
+        report_text: report,
+        pdf_url: pdfUrl,
+        created_by: user.id,
+      });
       
       // 6. Deliver to Keragon if webhook URL exists
       if (procedure.webhook_url) {
